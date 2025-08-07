@@ -1,0 +1,316 @@
+/* Modern SF-style color palette and typography */
+:root {
+    --primary-blue: #007AFF;
+    --primary-blue-hover: #0056D6;
+    --surface-primary: #FFFFFF;
+    --surface-secondary: #F2F2F7;
+    --surface-tertiary: #F8F9FA;
+    --text-primary: #1D1D1F;
+    --text-secondary: #86868B;
+    --text-tertiary: #8E8E93;
+    --border-light: #E5E5EA;
+    --border-medium: #D1D1D6;
+    --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+    --shadow-medium: 0 4px 6px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.06);
+    --shadow-large: 0 10px 15px rgba(0, 0, 0, 0.04), 0 4px 6px rgba(0, 0, 0, 0.05);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+}
+
+body {
+    background: var(--surface-tertiary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    margin: 0;
+    padding: 0;
+    color: var(--text-primary);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Main container */
+._dash-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+/* Header styling */
+h1 {
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 2.5rem;
+    margin: 0 0 8px 0;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+}
+
+/* Subtitle */
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin-bottom: 32px;
+    font-weight: 400;
+}
+
+/* Header container */
+.header-container {
+    background: var(--surface-primary);
+    border-radius: var(--radius-xl);
+    padding: 32px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-medium);
+    border: 1px solid var(--border-light);
+}
+
+/* Map container */
+.map-container {
+    background: var(--surface-primary);
+    border-radius: var(--radius-xl);
+    padding: 16px;
+    box-shadow: var(--shadow-large);
+    border: 1px solid var(--border-light);
+    overflow: hidden;
+}
+
+.leaflet-container {
+    border-radius: var(--radius-md);
+    height: 70vh !important;
+    min-height: 500px;
+}
+
+/* Filter container */
+.filter-container {
+    background: var(--surface-primary);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-medium);
+    border: 1px solid var(--border-light);
+}
+
+.filter-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.filter-label {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    white-space: nowrap;
+    margin-top: 8px;
+}
+
+/* Pill container */
+.pill-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 1;
+}
+
+/* Filter pills */
+.filter-pill {
+    background: var(--surface-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-medium);
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    outline: none;
+    white-space: nowrap;
+}
+
+.filter-pill:hover {
+    background: var(--surface-primary);
+    border-color: var(--primary-blue);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-subtle);
+}
+
+.filter-pill.active {
+    background: var(--primary-blue);
+    color: white;
+    border-color: var(--primary-blue);
+    box-shadow: var(--shadow-subtle);
+}
+
+.filter-pill.active:hover {
+    background: var(--primary-blue-hover);
+    border-color: var(--primary-blue-hover);
+    transform: translateY(-1px);
+}
+
+/* Dropdown styling */
+.Select-control {
+    border: 1px solid var(--border-medium) !important;
+    border-radius: var(--radius-sm) !important;
+    box-shadow: none !important;
+    min-height: 40px !important;
+    background: var(--surface-primary) !important;
+}
+
+.Select-control:hover {
+    border-color: var(--primary-blue) !important;
+}
+
+.Select-control.is-focused {
+    border-color: var(--primary-blue) !important;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1) !important;
+}
+
+.Select-placeholder {
+    color: var(--text-tertiary) !important;
+    font-size: 0.9rem !important;
+}
+
+.Select-value-label {
+    color: var(--text-primary) !important;
+    font-size: 0.9rem !important;
+}
+
+.Select-menu-outer {
+    border: 1px solid var(--border-light) !important;
+    border-radius: var(--radius-sm) !important;
+    box-shadow: var(--shadow-large) !important;
+    margin-top: 4px !important;
+}
+
+.Select-option {
+    color: var(--text-primary) !important;
+    background: var(--surface-primary) !important;
+    font-size: 0.9rem !important;
+    padding: 12px 16px !important;
+}
+
+.Select-option:hover {
+    background: var(--surface-secondary) !important;
+    color: var(--text-primary) !important;
+}
+
+.Select-option.is-selected {
+    background: var(--primary-blue) !important;
+    color: white !important;
+}
+
+.Select-option.is-focused {
+    background: var(--surface-secondary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Multi-select value styling */
+.Select-value {
+    background: var(--primary-blue) !important;
+    border: 1px solid var(--primary-blue) !important;
+    border-radius: 6px !important;
+    color: white !important;
+    font-size: 0.85rem !important;
+    margin: 2px !important;
+}
+
+.Select-value-icon {
+    border-right-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.Select-value-icon:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+}
+
+/* Leaflet popup styling */
+.leaflet-popup-content-wrapper {
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-large) !important;
+    border: 1px solid var(--border-light) !important;
+}
+
+.leaflet-popup-content {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Display', 'Helvetica Neue', sans-serif !important;
+    color: var(--text-primary) !important;
+    line-height: 1.5 !important;
+}
+
+.leaflet-popup-content b {
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+    font-size: 1.1rem !important;
+}
+
+.leaflet-popup-content a {
+    color: var(--primary-blue) !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+    padding: 8px 16px !important;
+    background: var(--surface-secondary) !important;
+    border-radius: 6px !important;
+    display: inline-block !important;
+    margin-top: 8px !important;
+    transition: all 0.2s ease !important;
+}
+
+.leaflet-popup-content a:hover {
+    background: var(--primary-blue) !important;
+    color: white !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    ._dash-container {
+        padding: 16px;
+    }
+    
+    .header-container {
+        padding: 24px 20px;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+    
+    .filter-content {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+    
+    .filter-label {
+        text-align: left;
+        margin-top: 0;
+    }
+    
+    .pill-container {
+        justify-content: flex-start;
+    }
+    
+    .filter-pill {
+        font-size: 0.85rem;
+        padding: 6px 12px;
+    }
+    
+    .leaflet-container {
+        height: 60vh !important;
+        min-height: 400px;
+    }
+}
+
+/* Loading and interaction states */
+.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+/* Smooth transitions */
+* {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
