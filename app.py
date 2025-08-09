@@ -57,7 +57,7 @@ def build_popup_content(name, types, notes, url):
             html.Div(type_badges, className="type-badges") if type_badges else None,
             html.Div(
                 dcc.Markdown(notes, link_target="_blank", className="notes") if notes else \
-                html.P("No description available", className="notes notes--empty"),
+                None,
                 className="notes-wrapper"
             ),
             html.A(
@@ -125,32 +125,29 @@ app = dash.Dash(__name__, external_stylesheets=[
 app.title = "Toronto Builders Map"
 app.layout = html.Div([
     html.Div([
-        html.H1("Toronto Builders Map"),
-        html.P(
-            "Your guide to build and connect in Toronto's tech ecosystem",
-            className="subtitle"
-        ),
+        # Left: title + subtitle grouped
+        html.Div([
+            html.H1("Toronto Builders Map"),
+            html.P(
+                "Your guide to build and connect in Toronto's tech ecosystem",
+                className="subtitle"
+            )
+        ], className="header-meta"),
+        # Right: CTA button
         html.A(
-            "✨ Submit a New Place",
+            "Submit a New Place",
             href="https://airtable.com/appFThl6Aw8IKOBif/pag8AhtZ5GOZlZ1bJ/form",
             target="_blank",
-            className="filter-pill active",
-            style={
-                "fontSize": "1.08rem",
-                "marginTop": "4px",
-                "marginBottom": "12px",
-                "fontWeight": 600,
-                "display": "inline-block",
-                "textDecoration": "none",
-                "cursor": "pointer"
-            }
+            className="header-cta filter-pill active",
         )
     ], className="header-container"),
     
     # Filter section
     html.Div([
         html.Div([
-            html.Span("Filter by type:", className="filter-label"),
+            html.Div([
+                html.Span("Filter by type:", className="filter-label")
+            ]),
             html.Div([
                 html.Button(
                     type_option,
@@ -158,7 +155,8 @@ app.layout = html.Div([
                     className="filter-pill active",
                     n_clicks=0
                 ) for type_option in type_options
-            ], className="pill-container")
+            ], className="pill-container"),
+            html.P(id="results-info", className="notes")
         ], className="filter-content")
     ], className="filter-container"),
     
@@ -186,12 +184,13 @@ app.layout = html.Div([
             'minWidth': '0',
             'paddingRight': '24px'
         }, className="map-container"),
-        html.Div([            html.Div(id="resource-list", className="resource-list-scroll")
+        html.Div([
+            html.Div(id="resource-list", className="resource-list-scroll")
         ], className="resource-list-container")
     ], className="main-content"),
-    # Footer info
+    # Footer (intentionally left empty)
     html.Div([
-        html.P(id="results-info", className="results-info")
+        
     ])
 ], className="_dash-container")
 
@@ -267,21 +266,17 @@ def update_markers_info_and_list(selected_types, bounds):
         type_badges = build_type_badges(info['types'])
         resource_list_items.append(
             html.Div([
-                html.H4(info['name'], className="resource-item-title"),
-                html.Div(type_badges, className="type-badges") if type_badges else None,
-                (dcc.Markdown(info['notes'], link_target="_blank", className="notes notes--compact") if info['notes'] else html.P("No description available", className="notes notes--empty notes--compact")),
-                (html.A('📍 View on Google Maps', href=info['url'], target='_blank', className="google-maps-link google-maps-link--small") if info['url'] and info['url'] != '#' else None)
+            html.H4(info['name'], className="resource-item-title"),
+            html.Div(type_badges, className="type-badges") if type_badges else None,
+            (dcc.Markdown(info['notes'], link_target="_blank", className="notes notes--compact") if info['notes'] else None),
+            (html.A('📍 View on Google Maps', href=info['url'], target='_blank', className="google-maps-link google-maps-link--small") if info['url'] and info['url'] != '#' else None)
             ], className='resource-item')
         )
 
     # Info text
     filtered_count = len(filtered_resources)
     visible_count = len(visible_resources)
-    info_text = [
-        f"💡 Showing {visible_count} of {filtered_count} filtered locations in current view.",
-        html.Br(),
-        f"Filtered by: {', '.join(selected_types)}" if selected_types else ""
-    ]
+    info_text = f"Showing {visible_count}/{filtered_count} locations on the map"
 
     return markers, info_text, resource_list_items
 

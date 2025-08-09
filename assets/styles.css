@@ -24,21 +24,23 @@ body { background: var(--surface-tertiary); font-family: -apple-system, BlinkMac
 /* Layout containers */
 ._dash-container { max-width:1200px; margin:0 auto; padding:24px; }
 .header-container, .filter-container, .map-container { background: var(--surface-primary); border:1px solid var(--border-light); }
-.header-container { border-radius: var(--radius-xl); padding:32px; margin-bottom:24px; box-shadow: var(--shadow-medium); }
+.header-container { border-radius: var(--radius-lg); padding:22px; margin-bottom:14px; box-shadow: var(--shadow-medium); display:flex; align-items:center; justify-content:space-between; gap:16px; }
+/* Flex header helpers */
+.header-meta { display:flex; flex-direction:column; gap:6px; flex:1 1 auto; min-width:0; }
+.header-cta { margin:0; white-space:nowrap; font-size:1.08rem; font-weight:500; text-decoration: none;}
 .filter-container { border-radius: var(--radius-lg); padding:20px 24px; margin-bottom:24px; box-shadow: var(--shadow-medium); }
 .map-container { border-radius: var(--radius-xl); padding:16px; box-shadow: var(--shadow-large); overflow:hidden; }
 .main-content { display:flex; flex-direction:row; gap:0; width:100%; }
 
 /* Headings & text */
 h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 8px; letter-spacing:-0.5px; line-height:1.2; }
-.subtitle { color: var(--text-secondary); font-size:1.1rem; margin:0 0 32px; font-weight:400; }
+.subtitle { color: var(--text-secondary); font-size:1.1rem; margin:0 0 12px; font-weight:400; }
 .popup-title, .resource-item-title { margin:0 0 8px; font-size:1.1rem; font-weight:600; color: var(--text-primary); }
 .resource-item-title { margin-bottom:4px; font-size:1rem; }
 
 /* Utility text styles */
 .notes { color: var(--text-secondary); font-size:0.9rem; line-height:1.4; margin:0 0 8px; }
 .notes--compact { line-height:1.3; }
-.notes--empty { font-style:italic; }
 
 /* Type badges */
 .type-badges { margin-bottom:12px; display:flex; flex-wrap:wrap; gap:4px; }
@@ -76,7 +78,8 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 8
 /* Responsive */
 @media (max-width:768px) {
   ._dash-container { padding:16px; }
-  .header-container { padding:24px 20px; }
+  .header-container { padding:24px 20px; flex-direction:column; align-items:flex-start; gap:8px; }
+  .header-cta { margin-top:4px; }
   h1 { font-size:2rem; }
   .filter-content { flex-direction:column; align-items:stretch; gap:12px; }
   .filter-label { text-align:left; margin-top:0; }
