@@ -107,16 +107,16 @@ def is_within_bounds(lat, lon, bounds):
         in_lon = (lon >= west) or (lon <= east)
     return in_lat and in_lon
 
-# --- Filter logic: build set of unique types, ensure 'Library' is included ---
-type_options = set()
-for r in resources:
-    t = get_field(r.get('fields', {}), 'type', 'Type')
-    if isinstance(t, list):  # Multi-select
-        type_options.update(t)
-    elif t:
-        type_options.add(t)
-type_options.add("Library")  # Always show 'Library'
-type_options = sorted(type_options)
+# Helper to compute unique types from resources data
+def compute_unique_types(resources_data):
+    type_set = set()
+    for item in (resources_data or []):
+        for t in (item.get('types') or []):
+            if t:
+                type_set.add(t)
+    # Always include 'Library' as an option
+    type_set.add("Library")
+    return sorted(type_set)
 
 app = dash.Dash(__name__, external_stylesheets=[
     'https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&display=swap'
@@ -148,20 +148,14 @@ app.layout = html.Div([
             html.Div([
                 html.Span("Filter by type:", className="filter-label")
             ]),
-            html.Div([
-                html.Button(
-                    type_option,
-                    id={'type': 'filter-pill', 'index': type_option},
-                    className="filter-pill active",
-                    n_clicks=0
-                ) for type_option in type_options
-            ], className="pill-container"),
+            html.Div(id="pill-container", className="pill-container"),
             html.P(id="results-info", className="notes")
         ], className="filter-content")
     ], className="filter-container"),
     
-    # Hidden store to track selected types
-    dcc.Store(id='selected-types-store', data=type_options),
+    # Hidden stores
+    dcc.Store(id='resources-store', data=[extract_resource_info(r) for r in resources]),
+    dcc.Store(id='selected-types-store', data=[]),
     
     # Main content: map and resource list side by side
     html.Div([
@@ -194,50 +188,88 @@ app.layout = html.Div([
     ])
 ], className="_dash-container")
 
+# Dynamically generate pills and manage selected types in one callback
 @app.callback(
-    Output('selected-types-store', 'data'),
-    [Input({'type': 'filter-pill', 'index': ALL}, 'n_clicks')],
-    [State('selected-types-store', 'data')]
+    [
+        Output('pill-container', 'children'),
+        Output('selected-types-store', 'data'),
+    ],
+    [
+        Input('resources-store', 'data'),
+        Input({'type': 'filter-pill', 'index': ALL}, 'n_clicks'),
+    ],
+    [
+        State('selected-types-store', 'data'),
+        State({'type': 'filter-pill', 'index': ALL}, 'id'),
+    ]
 )
-def update_selected_types(n_clicks_list, current_selected):
+def generate_pills_and_update_selection(resources_data, n_clicks_list, current_selected, pill_ids):
+    import json
+    # Compute unique types from resources
+    types = compute_unique_types(resources_data)
+
+    # Build pill buttons
+    pills = [
+        html.Button(
+            t,
+            id={'type': 'filter-pill', 'index': t},
+            className="filter-pill",
+            n_clicks=0
+        ) for t in types
+    ]
+
+    # Determine what triggered the callback
     ctx = dash.callback_context
     if not ctx.triggered:
-        return type_options  # Start with all selected
-    
-    # Get which button was clicked
-    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-    if button_id != '{}':  # Make sure it's a valid button click
-        import json
-        button_info = json.loads(button_id)
-        clicked_type = button_info['index']
-        
-        # Toggle the clicked type
+        # Initial load: select all types
+        return pills, types
+
+    trigger = ctx.triggered[0]['prop_id']
+    # If resources changed, reset selected types to all
+    if trigger.startswith('resources-store.'):
+        return pills, types
+
+    # Otherwise, a pill was clicked -> toggle selection
+    try:
+        trigger_id = json.loads(trigger.split('.')[0])
+        clicked_type = trigger_id.get('index')
+    except Exception:
+        clicked_type = None
+
+    # Start from current_selected, but ensure it's a subset of available types
+    current_selected = [t for t in (current_selected or []) if t in types]
+    if clicked_type:
         if clicked_type in current_selected:
             current_selected = [t for t in current_selected if t != clicked_type]
         else:
             current_selected = current_selected + [clicked_type]
-    
-    return current_selected
 
+    return pills, current_selected
+
+# Update pill styles using pattern-matching output
 @app.callback(
-    [Output({'type': 'filter-pill', 'index': type_option}, 'className') for type_option in type_options],
-    [Input('selected-types-store', 'data')]
+    Output({'type': 'filter-pill', 'index': ALL}, 'className'),
+    [Input('selected-types-store', 'data')],
+    [State({'type': 'filter-pill', 'index': ALL}, 'id')]
 )
-def update_pill_styles(selected_types):
-    return [
-        "filter-pill active" if type_option in selected_types else "filter-pill"
-        for type_option in type_options
-    ]
+def update_pill_styles_dynamic(selected_types, pill_ids):
+    selected_set = set(selected_types or [])
+    classes = []
+    for pid in (pill_ids or []):
+        label = pid.get('index') if isinstance(pid, dict) else None
+        classes.append("filter-pill active" if label in selected_set else "filter-pill")
+    return classes
 
 @app.callback(
     [Output('marker-layer', 'children'), Output('results-info', 'children'), Output('resource-list', 'children')],
-    [Input('selected-types-store', 'data'), Input('main-map', 'bounds')]
+    [Input('selected-types-store', 'data'), Input('main-map', 'bounds')],
+    [State('resources-store', 'data')]
 )
-def update_markers_info_and_list(selected_types, bounds):
+def update_markers_info_and_list(selected_types, bounds, resources_data):
+    resources_data = resources_data or []
     # Build list of resources that match selected types and have valid coordinates
     filtered_resources = []
-    for r in resources:
-        info = extract_resource_info(r)
+    for info in resources_data:
         if info['lat'] is None or info['lon'] is None:
             continue
         # If there are selected types, ensure intersection
