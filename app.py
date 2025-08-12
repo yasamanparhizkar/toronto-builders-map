@@ -3,7 +3,7 @@ from dash import html, dcc, Output, Input, State, ALL
 import dash_leaflet as dl
 from pyairtable import Table
 import os
-from dash.exceptions import PreventUpdate
+from config.helpers import *
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -12,111 +12,13 @@ load_dotenv()
 AIRTABLE_API_KEY = os.getenv('AIRTABLE_API_KEY')
 AIRTABLE_BASE_ID = os.getenv('AIRTABLE_BASE_ID')
 AIRTABLE_TABLE_ID = os.getenv('AIRTABLE_TABLE_ID')
-#AIRTABLE_FORM_URL = os.getenv('AIRTABLE_FORM_URL', '#')
 
 if not (AIRTABLE_API_KEY and AIRTABLE_BASE_ID and AIRTABLE_TABLE_ID):
     raise RuntimeError("Missing Airtable environment variables.")
 
-# Helper to fetch safely, case-insensitive
-def get_field(fields, *keys):
-    for k in keys:
-        if k in fields:
-            return fields[k]
-        # Case-insensitive fallback
-        for kk in fields:
-            if kk.lower() == k.lower():
-                return fields[kk]
-    return None
-
 table = Table(AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_TABLE_ID)
 resources = table.all()
 resources_by_id = {r.get('id'): r for r in resources}
-
-# Utility helpers for consistent rendering and filtering
-def normalize_lat_lon(lat, lon):
-    try:
-        return float(lat), float(lon)
-    except (TypeError, ValueError):
-        return None, None
-
-
-def build_type_badges(types):
-    badges = []
-    if not types:
-        return badges
-    for t in types:
-        badges.append(html.Span(t, className="type-badge"))
-    return badges
-
-
-def build_popup_content(name, types, notes, url):
-    type_badges = build_type_badges(types)
-    return html.Div([
-        html.Div([
-            html.H4(name, className="popup-title"),
-            html.Div(type_badges, className="type-badges") if type_badges else None,
-            html.Div(
-                dcc.Markdown(notes, link_target="_blank", className="notes") if notes else \
-                None,
-                className="notes-wrapper"
-            ),
-            html.A(
-                '📍 View on Google Maps',
-                href=url,
-                target='_blank',
-                className="google-maps-link"
-            ) if url != '#' else None
-        ], className="popup-content")
-    ])
-
-
-def extract_resource_info(r):
-    fields = r.get('fields', {})
-    types = get_field(fields, 'type', 'Type')
-    if types and not isinstance(types, list):
-        types = [types]
-    lat = get_field(fields, 'lat', 'latitude', 'Lat', 'Latitude')
-    lon = get_field(fields, 'lon', 'longitude', 'Lon', 'Longitude', 'Lng', 'Long')
-    lat, lon = normalize_lat_lon(lat, lon)
-    name = get_field(fields, 'name', 'Name') or "Unnamed Location"
-    notes = get_field(fields, 'description', 'Notes') or ""
-    url = get_field(fields, 'Google Maps link', 'url', 'URL', 'Link') or '#'
-    return {
-        'id': r.get('id'),
-        'name': name,
-        'types': types or [],
-        'lat': lat,
-        'lon': lon,
-        'notes': notes,
-        'url': url
-    }
-
-
-def is_within_bounds(lat, lon, bounds):
-    if not bounds or lat is None or lon is None:
-        return True
-    try:
-        (south, west), (north, east) = bounds
-    except Exception:
-        return True
-    # Handle antimeridian crossing
-    in_lat = south <= lat <= north
-    if west <= east:
-        in_lon = west <= lon <= east
-    else:
-        in_lon = (lon >= west) or (lon <= east)
-    return in_lat and in_lon
-
-# Helper to compute unique types from resources data
-def compute_unique_types(resources_data):
-    type_set = set()
-    for item in (resources_data or []):
-        for t in (item.get('types') or []):
-            if t:
-                type_set.add(t)
-    # Always include 'Library' as an option
-    type_set.add("Library")
-    return sorted(type_set)
 
 app = dash.Dash(__name__, external_stylesheets=[
     'https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&display=swap'
@@ -182,7 +84,7 @@ app.layout = html.Div([
             html.Div(id="resource-list", className="resource-list-scroll")
         ], className="resource-list-container")
     ], className="main-content"),
-    # Footer (intentionally left empty)
+    # Footer (intentionally left empty for now)
     html.Div([
         
     ])
