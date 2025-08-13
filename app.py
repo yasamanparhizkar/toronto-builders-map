@@ -3,7 +3,9 @@ from dash import html, dcc, Output, Input, State, ALL
 import dash_leaflet as dl
 from pyairtable import Table
 import os
+from collections import defaultdict
 from config.helpers import *
+from config.schema import EVENTS_SCHEMA
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -11,14 +13,75 @@ load_dotenv()
 # Load Airtable credentials from environment variables
 AIRTABLE_API_KEY = os.getenv('AIRTABLE_API_KEY')
 AIRTABLE_BASE_ID = os.getenv('AIRTABLE_BASE_ID')
-AIRTABLE_TABLE_ID = os.getenv('AIRTABLE_TABLE_ID')
+AIRTABLE_TABLE_ID = os.getenv('AIRTABLE_TABLE_ID')  # Places table
+AIRTABLE_EVENTS_TABLE_ID = os.getenv('AIRTABLE_EVENTS_TABLE_ID')  # Events table
 
-if not (AIRTABLE_API_KEY and AIRTABLE_BASE_ID and AIRTABLE_TABLE_ID):
-    raise RuntimeError("Missing Airtable environment variables.")
+if not (AIRTABLE_API_KEY and AIRTABLE_BASE_ID and AIRTABLE_TABLE_ID and AIRTABLE_EVENTS_TABLE_ID):
+    raise RuntimeError("Missing Airtable environment variables (API key, base id, places table id, or events table id).")
 
+# Query places
 table = Table(AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_TABLE_ID)
 resources = table.all()
 resources_by_id = {r.get('id'): r for r in resources}
+
+# Query events and link them to places
+events_table = Table(AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_EVENTS_TABLE_ID)
+events = events_table.all()
+
+# Build a mapping from place name to id for robustness (in case events reference names)
+place_name_to_id = {}
+for r in resources:
+    fields = r.get('fields', {})
+    name = fields.get('Name')
+    if name:
+        place_name_to_id[str(name).strip()] = r.get('id')
+
+place_id_to_events = defaultdict(list)
+for ev in events:
+    f = ev.get('fields', {})
+    # Coerce fields according to EVENTS_SCHEMA
+    name = coerce_value(f.get('Name'), EVENTS_SCHEMA['Name']['type']) or EVENTS_SCHEMA['Name']['default']
+    url = coerce_value(
+        f.get('Official Link') or f.get('Official link') or f.get('Link'),
+        EVENTS_SCHEMA['Official Link']['type']
+    ) or EVENTS_SCHEMA['Official Link']['default']
+    if not url:
+        continue
+    ev_item = {
+        'name': name,
+        'url': url,
+        # Optional extras kept for future display if needed
+        'recurrence': coerce_value(f.get('Recurrence'), EVENTS_SCHEMA['Recurrence']['type']) or EVENTS_SCHEMA['Recurrence']['default'],
+        'when': coerce_value(f.get('When (if recurrent)'), EVENTS_SCHEMA['When (if recurrent)']['type']) or EVENTS_SCHEMA['When (if recurrent)']['default'],
+        'date': coerce_value(f.get('Date (if not recurrent)'), EVENTS_SCHEMA['Date (if not recurrent)']['type']) or EVENTS_SCHEMA['Date (if not recurrent)']['default'],
+    }
+
+    # Determine which place(s) this event is linked to
+    place_ids = []
+    place_field = coerce_value(f.get('Place') or f.get('Places'), EVENTS_SCHEMA['Place']['type'])
+    from_names = coerce_value(f.get('Name (from Place)'), EVENTS_SCHEMA['Name (from Place)']['type'])
+
+    if isinstance(place_field, list) and place_field:
+        for p in place_field:
+            if isinstance(p, str) and p.startswith('rec'):
+                place_ids.append(p)
+            elif isinstance(p, str):
+                pid = place_name_to_id.get(p.strip())
+                if pid:
+                    place_ids.append(pid)
+    elif isinstance(place_field, str):
+        pid = place_name_to_id.get(place_field.strip())
+        if pid:
+            place_ids.append(pid)
+
+    if not place_ids and from_names:
+        for p in (from_names if isinstance(from_names, list) else [from_names]):
+            pid = place_name_to_id.get(str(p).strip())
+            if pid:
+                place_ids.append(pid)
+
+    for pid in place_ids:
+        place_id_to_events[pid].append(ev_item)
 
 app = dash.Dash(__name__, external_stylesheets=[
     'https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&display=swap'
@@ -56,7 +119,13 @@ app.layout = html.Div([
     ], className="filter-container"),
     
     # Hidden stores
-    dcc.Store(id='resources-store', data=[extract_resource_info(r) for r in resources]),
+    dcc.Store(
+        id='resources-store',
+        data=[
+            {**extract_resource_info(r), 'events': place_id_to_events.get(r.get('id'), [])}
+            for r in resources
+        ]
+    ),
     dcc.Store(id='selected-types-store', data=[]),
     
     # Main content: map and resource list side by side
@@ -184,7 +253,12 @@ def update_markers_info_and_list(selected_types, bounds, resources_data):
     markers = [
         dl.Marker(
             position=[info['lat'], info['lon']],
-            children=dl.Popup(build_popup_content(info['name'], info['types'], info['notes'], info['url']), maxWidth=350)
+            children=dl.Popup(
+                build_popup_content(
+                    info['name'], info['types'], info['notes'], info['url'], info.get('events')
+                ),
+                maxWidth=350
+            )
         )
         for info in filtered_resources
     ]
@@ -198,12 +272,25 @@ def update_markers_info_and_list(selected_types, bounds, resources_data):
     resource_list_items = []
     for info in visible_resources:
         type_badges = build_type_badges(info['types'])
+        # Event link(s): show the first event link if present
+        event_links = info.get('events') or []
+        first_event_link = None
+        for e in event_links:
+            if e and e.get('url'):
+                first_event_link = e
+                break
         resource_list_items.append(
             html.Div([
-            html.H4(info['name'], className="resource-item-title"),
-            html.Div(type_badges, className="type-badges") if type_badges else None,
-            (dcc.Markdown(info['notes'], link_target="_blank", className="notes notes--compact") if info['notes'] else None),
-            (html.A('📍 View on Google Maps', href=info['url'], target='_blank', className="google-maps-link google-maps-link--small") if info['url'] and info['url'] != '#' else None)
+                html.H4(info['name'], className="resource-item-title"),
+                html.Div(type_badges, className="type-badges") if type_badges else None,
+                (html.A(
+                    f"🎟️ {first_event_link.get('name') or 'Event'}",
+                    href=first_event_link.get('url'),
+                    target='_blank',
+                    className="event-link event-link--small"
+                ) if first_event_link else None),
+                (dcc.Markdown(info['notes'], link_target="_blank", className="notes notes--compact") if info['notes'] else None),
+                (html.A('📍 View on Google Maps', href=info['url'], target='_blank', className="google-maps-link google-maps-link--small") if info['url'] and info['url'] != '#' else None)
             ], className='resource-item')
         )
 

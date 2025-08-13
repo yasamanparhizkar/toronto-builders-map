@@ -41,8 +41,14 @@ def build_type_badges(types):
     return badges
 
 
-def build_popup_content(name, types, notes, url):
+def build_popup_content(name, types, notes, url, events=None):
     type_badges = build_type_badges(types)
+    # Pick first event if available
+    first_event = None
+    for e in (events or []):
+        if e and e.get('url'):
+            first_event = e
+            break
     return html.Div([
         html.Div([
             html.H4(name, className="popup-title"),
@@ -52,6 +58,12 @@ def build_popup_content(name, types, notes, url):
                 None,
                 className="notes-wrapper"
             ),
+            (html.A(
+                f"🎟️ {first_event.get('name') or 'Event'}",
+                href=first_event.get('url'),
+                target='_blank',
+                className="event-link"
+            ) if first_event else None),
             html.A(
                 '📍 View on Google Maps',
                 href=url,
