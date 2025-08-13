@@ -284,7 +284,7 @@ def update_markers_info_and_list(selected_types, bounds, resources_data):
                 html.H4(info['name'], className="resource-item-title"),
                 html.Div(type_badges, className="type-badges") if type_badges else None,
                 (html.A(
-                    f"🎟️ {first_event_link.get('name') or 'Event'}",
+                    f"📅 {first_event_link.get('name') or 'Event'}",
                     href=first_event_link.get('url'),
                     target='_blank',
                     className="event-link event-link--small"
