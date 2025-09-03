@@ -119,11 +119,18 @@ def is_within_bounds(lat, lon, bounds):
 
 # Helper to compute unique types from resources data
 def compute_unique_types(resources_data):
+    """Computes a sorted list of unique types from a list of resources.
+
+    Args:
+        resources_data (list[dict]): A list of resource dictionaries, where each
+            item might contain a 'types' key with a list of type strings.
+
+    Returns:
+        list[str]: A sorted list of unique type strings. 
+    """
     type_set = set()
     for item in (resources_data or []):
         for t in (item.get('types') or []):
             if t:
                 type_set.add(t)
-    # Always include 'Library' as an option
-    type_set.add("Library")
     return sorted(type_set)
