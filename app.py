@@ -16,6 +16,8 @@ AIRTABLE_BASE_ID = os.getenv('AIRTABLE_BASE_ID')
 AIRTABLE_TABLE_ID = os.getenv('AIRTABLE_TABLE_ID')  # Places table
 AIRTABLE_EVENTS_TABLE_ID = os.getenv('AIRTABLE_EVENTS_TABLE_ID')  # Events table
 
+EVENTS_PILL = "Only Places with Events"
+
 if not (AIRTABLE_API_KEY and AIRTABLE_BASE_ID and AIRTABLE_TABLE_ID and AIRTABLE_EVENTS_TABLE_ID):
     raise RuntimeError("Missing Airtable environment variables (API key, base id, places table id, or events table id).")
 
@@ -111,7 +113,7 @@ app.layout = html.Div([
     html.Div([
         html.Div([
             html.Div([
-                html.Span("Filter by type:", className="filter-label")
+                html.Span("Filters:", className="filter-label")
             ]),
             html.Div(id="pill-container", className="pill-container"),
             html.P(id="results-info", className="notes")
@@ -176,8 +178,10 @@ app.layout = html.Div([
 )
 def generate_pills_and_update_selection(resources_data, n_clicks_list, current_selected, pill_ids):
     import json
+    
     # Compute unique types from resources
     types = compute_unique_types(resources_data)
+    pill_filters = types + [EVENTS_PILL]
 
     # Build pill buttons
     pills = [
@@ -186,17 +190,17 @@ def generate_pills_and_update_selection(resources_data, n_clicks_list, current_s
             id={'type': 'filter-pill', 'index': t},
             className="filter-pill",
             n_clicks=0
-        ) for t in types
+        ) for t in pill_filters
     ]
 
     # Determine what triggered the callback
     ctx = dash.callback_context
     if not ctx.triggered:
-        # Initial load: select all types
+        # Initial load: select all types except 'places with events'
         return pills, types
 
     trigger = ctx.triggered[0]['prop_id']
-    # If resources changed, reset selected types to all
+    # If resources changed, reset selected types to all except 'places with events'
     if trigger.startswith('resources-store.'):
         return pills, types
 
@@ -208,12 +212,12 @@ def generate_pills_and_update_selection(resources_data, n_clicks_list, current_s
         clicked_type = None
 
     # Start from current_selected, but ensure it's a subset of available types
-    current_selected = [t for t in (current_selected or []) if t in types]
+    current_selected = [t for t in (current_selected or []) if t in pill_filters]
     if clicked_type:
         if clicked_type in current_selected:
-            current_selected = [t for t in current_selected if t != clicked_type]
+            current_selected.remove(clicked_type)
         else:
-            current_selected = current_selected + [clicked_type]
+            current_selected.append(clicked_type)
 
     return pills, current_selected
 
@@ -237,16 +241,23 @@ def update_pill_styles_dynamic(selected_types, pill_ids):
     [State('resources-store', 'data')]
 )
 def update_markers_info_and_list(selected_types, bounds, resources_data):
+    # selected_types here receives the places types AND the 'Only Places with Events' filter
     resources_data = resources_data or []
     # Build list of resources that match selected types and have valid coordinates
     filtered_resources = []
     for info in resources_data:
         if info['lat'] is None or info['lon'] is None:
             continue
+        
         # If there are selected types, ensure intersection
         if selected_types and info['types']:
             if not any(t in selected_types for t in info['types']):
                 continue
+        
+        # If EVENTS_PILL is part of selected_types, exclude places with no events attached
+        if EVENTS_PILL in selected_types and not info.get('events'):
+            continue
+        
         filtered_resources.append(info)
 
     # Markers: show all filtered markers (not limited by view bounds)
