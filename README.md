@@ -1,6 +1,10 @@
 # toronto-builders-map
 Map of Toronto for Builders' Needs
 
+Link to submit events: https://airtable.com/appFThl6Aw8IKOBif/pagc4ThCUWv4SOF6l/form
+Link to submit places: https://airtable.com/appFThl6Aw8IKOBif/pag8AhtZ5GOZlZ1bJ/form
+Contribute to the repo: https://github.com/users/yasamanparhizkar/projects/2/views/1
+
 ## Useful resources:
 * Guide to Toronto for Founders: https://startupguidetoronto.notion.site/Starter-Guide-to-Toronto-for-Founders-4fab55bfe1c047b99dfd513863df7d71
 * Here's the SF version of the above guide: https://www.startertosf.guide/

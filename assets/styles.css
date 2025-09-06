@@ -28,6 +28,33 @@ body { background: var(--surface-tertiary); font-family: -apple-system, BlinkMac
 /* Flex header helpers */
 .header-meta { display:flex; flex-direction:column; gap:6px; flex:1 1 auto; min-width:0; }
 .header-cta { margin:0; white-space:nowrap; font-size:1.08rem; font-weight:500; text-decoration: none;}
+.header-cta-container {
+    display: flex;
+    flex-direction: column;   /* Stack vertically by default */
+    gap: 16px;
+    align-items: flex-end;
+}
+.header-cta--event {
+  color: #FFF5F5 !important;
+  background: #D7263D !important;
+  border-color: #D7263D !important;
+
+}
+.header-cta--event:hover,
+.header-cta--event:focus {
+  background: #D7263D !important;
+  color: #fff !important;
+  border-color: #D7263D !important;
+}
+
+/* On small screens, stack horizontally */
+@media (max-width: 768px) {
+    .header-cta-container {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 12px;
+    }
+}
 .filter-container { border-radius: var(--radius-lg); padding:20px 24px; margin-bottom:24px; box-shadow: var(--shadow-medium); }
 .map-container { border-radius: var(--radius-xl); padding:16px; box-shadow: var(--shadow-large); overflow:hidden; }
 .main-content { display:flex; flex-direction:row; gap:0; width:100%; }
@@ -66,9 +93,10 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 8
 .google-maps-link:hover { background: var(--primary-blue); color:#fff; border-color: var(--primary-blue); transform:translateY(-1px); box-shadow: var(--shadow-subtle); }
 .google-maps-link--small { padding:4px 8px; font-size:0.7rem; border-radius:4px; }
 
-/* Event links - distinct purple accent to differentiate from Google Maps (blue) */
-.event-link { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; font-size:0.8rem; font-weight:600; border-radius:999px; text-decoration:none; background:#F7F0FF; color:#6E3AFF; border:1px solid #E2D6FF; box-shadow:none; }
-.event-link:hover { background:#6E3AFF; color:#fff; border-color:#6E3AFF; transform:translateY(-1px); box-shadow: var(--shadow-subtle); }
+
+/* Event links - distinct red accent to differentiate from Google Maps (blue) */
+.event-link { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; font-size:0.8rem; font-weight:600; border-radius:999px; text-decoration:none; background:#FFF5F5; color:#D7263D; border:1px solid #FFD6D6; box-shadow:none; }
+.event-link:hover { background:#D7263D; color:#fff; border-color:#D7263D; transform:translateY(-1px); box-shadow: var(--shadow-subtle); }
 .event-link--small { padding:4px 10px; font-size:0.72rem; border-radius:999px; margin: 4px 0 6px; display:flex; width: fit-content; }
 
 /* Ensure event link in popup is on its own line too */

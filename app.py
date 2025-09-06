@@ -100,13 +100,21 @@ app.layout = html.Div([
                 className="subtitle"
             )
         ], className="header-meta"),
-        # Right: CTA button
-        html.A(
-            "Submit a New Place",
-            href="https://airtable.com/appFThl6Aw8IKOBif/pag8AhtZ5GOZlZ1bJ/form",
-            target="_blank",
-            className="header-cta filter-pill active",
-        )
+        # Right: CTA buttons (wrapped in a Div)
+        html.Div([
+            html.A(
+                "📍 Submit a New Place",
+                href="https://airtable.com/appFThl6Aw8IKOBif/pag8AhtZ5GOZlZ1bJ/form",
+                target="_blank",
+                className="header-cta filter-pill active",
+            ),
+            html.A(
+                "📅 Submit a New Event",
+                href="https://airtable.com/appFThl6Aw8IKOBif/pagc4ThCUWv4SOF6l/form",
+                target="_blank",
+                className="header-cta filter-pill active header-cta--event",
+            )
+        ], className="header-cta-container")
     ], className="header-container"),
     
     # Filter section
