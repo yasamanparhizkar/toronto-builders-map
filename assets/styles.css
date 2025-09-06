@@ -82,6 +82,20 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 8
 .filter-pill.active { background: var(--primary-blue); color:#fff; border-color: var(--primary-blue); box-shadow: var(--shadow-subtle); }
 .filter-pill.active:hover { background: var(--primary-blue-hover); border-color: var(--primary-blue-hover); }
 
+.filter-pill--event {
+    background: #FFF5F5 !important;
+    color: #D7263D !important;
+    border-color: #FFD6D6 !important;
+}
+
+/* Active and hover states for the event pill.
+   This selector is more specific than .filter-pill.active, so it wins. */
+.filter-pill.filter-pill--event.active,
+.filter-pill--event:hover {
+    background: #D7263D !important;
+    color: #fff !important;
+    border-color: #D7263D !important;
+}
 /* Map & leaflet */
 .leaflet-container { border-radius: var(--radius-md); height:70vh !important; min-height:500px; }
 .leaflet-popup-content-wrapper { border-radius: var(--radius-md) !important; box-shadow: var(--shadow-large) !important; border:1px solid var(--border-light) !important; }

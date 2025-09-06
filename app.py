@@ -196,7 +196,7 @@ def generate_pills_and_update_selection(resources_data, n_clicks_list, current_s
         html.Button(
             t,
             id={'type': 'filter-pill', 'index': t},
-            className="filter-pill",
+            className="filter-pill filter-pill--event" if t == EVENTS_PILL else "filter-pill",
             n_clicks=0
         ) for t in pill_filters
     ]
@@ -240,7 +240,11 @@ def update_pill_styles_dynamic(selected_types, pill_ids):
     classes = []
     for pid in (pill_ids or []):
         label = pid.get('index') if isinstance(pid, dict) else None
-        classes.append("filter-pill active" if label in selected_set else "filter-pill")
+        base = "filter-pill filter-pill--event" if label == EVENTS_PILL else "filter-pill"
+        if label in selected_set:
+            classes.append(f"{base} active")
+        else:
+            classes.append(base)
     return classes
 
 @app.callback(
