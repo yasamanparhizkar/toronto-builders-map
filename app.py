@@ -67,8 +67,7 @@ app.layout = html.Div([
             html.Div([
                 html.Span(className="filter-label")
             ]),
-            html.Div(id="pill-container", className="pill-container"),
-            html.P(id="results-info", className="results-info")
+            html.Div(id="pill-container", className="pill-container")
         ], className="filter-content")
     ], className="filter-container"),
     
@@ -85,6 +84,7 @@ app.layout = html.Div([
     # Main content: map and resource list side by side
     html.Div([
         html.Div([
+            html.P(id="results-info", className="results-info"),
             dl.Map(
                 id="main-map", 
                 center=[43.65, -79.38], 

@@ -66,7 +66,7 @@ def build_popup_content(name, types, notes, url, events=None):
                 className="notes-wrapper"
             ),
             (html.A(
-                f"🎟️ {first_event.get('name') or 'Event'}",
+                f"📅 {first_event.get('name') or 'Event'}",
                 href=first_event.get('url'),
                 target='_blank',
                 className="event-link"
