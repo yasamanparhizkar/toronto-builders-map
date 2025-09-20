@@ -7,24 +7,27 @@ from collections import defaultdict
 from config.helpers import *
 from config.schema import EVENTS_SCHEMA
 
+# for handling one-time events
+from datetime import datetime, timedelta
+
 from dotenv import load_dotenv
 load_dotenv()
 
 # Load Airtable credentials from environment variables
 AIRTABLE_API_KEY = os.getenv('AIRTABLE_API_KEY')
 AIRTABLE_BASE_ID = os.getenv('AIRTABLE_BASE_ID')
-AIRTABLE_TABLE_ID = os.getenv('AIRTABLE_TABLE_ID')  # Places table
-AIRTABLE_EVENTS_TABLE_ID = os.getenv('AIRTABLE_EVENTS_TABLE_ID')  # Events table
+AIRTABLE_PLACES_TABLE_ID = os.getenv('AIRTABLE_PLACES_TABLE_ID')
+AIRTABLE_EVENTS_TABLE_ID = os.getenv('AIRTABLE_EVENTS_TABLE_ID')
 
 EVENTS_PILL = "Only Places with Events"
 
-if not (AIRTABLE_API_KEY and AIRTABLE_BASE_ID and AIRTABLE_TABLE_ID and AIRTABLE_EVENTS_TABLE_ID):
+if not (AIRTABLE_API_KEY and AIRTABLE_BASE_ID and AIRTABLE_PLACES_TABLE_ID and AIRTABLE_EVENTS_TABLE_ID):
     raise RuntimeError("Missing Airtable environment variables (API key, base id, places table id, or events table id).")
 
 # Query places
-table = Table(AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_TABLE_ID)
-resources = table.all()
-resources_by_id = {r.get('id'): r for r in resources}
+table = Table(AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_PLACES_TABLE_ID)
+places = table.all()
+places_by_id = {r.get('id'): r for r in places}
 
 # Query events and link them to places
 events_table = Table(AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_EVENTS_TABLE_ID)
@@ -32,23 +35,32 @@ events = events_table.all()
 
 # Build a mapping from place name to id for robustness (in case events reference names)
 place_name_to_id = {}
-for r in resources:
-    fields = r.get('fields', {})
+for p in places:
+    fields = p.get('fields', {})
     name = fields.get('Name')
     if name:
-        place_name_to_id[str(name).strip()] = r.get('id')
+        place_name_to_id[str(name).strip()] = p.get('id')
 
 place_id_to_events = defaultdict(list)
+
 for ev in events:
     f = ev.get('fields', {})
-    # Coerce fields according to EVENTS_SCHEMA
-    name = coerce_value(f.get('Name'), EVENTS_SCHEMA['Name']['type']) or EVENTS_SCHEMA['Name']['default']
-    url = coerce_value(
-        f.get('Official Link') or f.get('Official link') or f.get('Link'),
-        EVENTS_SCHEMA['Official Link']['type']
-    ) or EVENTS_SCHEMA['Official Link']['default']
-    if not url:
+    raw_url = f.get('Official Link')
+    
+    if not raw_url: #we're not adding events without URL
         continue
+    
+    # Coerce fields according to EVENTS_SCHEMA
+    name = coerce_value(
+        f.get('Name'),
+        EVENTS_SCHEMA['Name']['type']
+    ) or EVENTS_SCHEMA['Name']['default']
+    
+    url = coerce_value(
+        raw_url,
+        EVENTS_SCHEMA['Official Link']['type']
+    )
+    
     ev_item = {
         'name': name,
         'url': url,
@@ -133,7 +145,7 @@ app.layout = html.Div([
         id='resources-store',
         data=[
             {**extract_resource_info(r), 'events': place_id_to_events.get(r.get('id'), [])}
-            for r in resources
+            for r in places
         ]
     ),
     dcc.Store(id='selected-types-store', data=[]),
