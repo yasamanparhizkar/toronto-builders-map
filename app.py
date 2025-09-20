@@ -55,7 +55,14 @@ app.layout = html.Div([
                 href="https://airtable.com/appFThl6Aw8IKOBif/pagc4ThCUWv4SOF6l/form",
                 target="_blank",
                 className="header-cta filter-pill active header-cta--event",
-            )
+            ),
+            html.Iframe(
+                src="https://ghbtns.com/github-btn.html?user=yasamanparhizkar&repo=toronto-builders-map&type=star&count=true&size=large",
+                style={"border": "none", "overflow": "hidden", "width": "170px", "height": "30px"},
+                width="150",
+                height="20",
+                title="GitHub"
+            ),
         ], className="header-cta-container")
     ], className="header-container"),
     
@@ -73,6 +80,7 @@ app.layout = html.Div([
     dcc.Store(id='resources-store'),
     dcc.Store(id='selected-types-store', data=[]),
     dcc.Store(id='event-window-store', data=EVENT_TIME_WINDOW_DAYS),
+    dcc.Interval(id='startup-refresh', interval=100, n_intervals=0, max_intervals=1),  
     
     
     # Main content: map and resource list side by side
@@ -237,9 +245,10 @@ def update_filter_pill_styles(selected_types, pill_ids):
 
 @app.callback(
     Output('resources-store', 'data'),
-    [Input('event-window-store', 'data')]
+    [Input('event-window-store', 'data'),
+     Input('startup-refresh', 'n_intervals')]  # <--- Add this input
 )
-def update_resources_on_time_window_change(selected_window):
+def update_resources_on_time_window_change(selected_window, n_intervals):
     # Reload places and events with the new interval
     places_by_id, place_id_to_events = load_places_and_events(
         AIRTABLE_API_KEY,
