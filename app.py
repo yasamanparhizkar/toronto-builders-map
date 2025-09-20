@@ -1,7 +1,6 @@
 import dash
 from dash import html, dcc, Output, Input, State, ALL
 import dash_leaflet as dl
-from pyairtable import Table
 import os
 from config.helpers import *
 from config.schema import EVENTS_SCHEMA
@@ -17,17 +16,16 @@ AIRTABLE_PLACES_TABLE_ID = os.getenv('AIRTABLE_PLACES_TABLE_ID')
 AIRTABLE_EVENTS_TABLE_ID = os.getenv('AIRTABLE_EVENTS_TABLE_ID')
 
 EVENTS_PILL = "Only Places with Events"
+EVENT_TIME_WINDOW_DAYS = 14
+EVENT_TIME_WINDOWS = [
+    {"label": "Within 7 days", "value": 7},
+    {"label": "Within 2 weeks", "value": 14},
+    {"label": "Within 1 month", "value": 30},
+]
 
 if not (AIRTABLE_API_KEY and AIRTABLE_BASE_ID and AIRTABLE_PLACES_TABLE_ID and AIRTABLE_EVENTS_TABLE_ID):
     raise RuntimeError("Missing Airtable environment variables (API key, base id, places table id, or events table id).")
 
-# Load places and events
-places_by_id, place_id_to_events = load_places_and_events(
-    AIRTABLE_API_KEY,
-    AIRTABLE_BASE_ID,
-    AIRTABLE_PLACES_TABLE_ID,
-    AIRTABLE_EVENTS_TABLE_ID
-)
 
 app = dash.Dash(__name__, external_stylesheets=[
     'https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&display=swap'
@@ -72,14 +70,10 @@ app.layout = html.Div([
     ], className="filter-container"),
     
     # Hidden stores
-    dcc.Store(
-        id='resources-store',
-        data=[
-            {**extract_place_info(p), 'events': place_id_to_events.get(p.get('id'), [])}
-            for p in places_by_id.values()
-        ]
-    ),
+    dcc.Store(id='resources-store'),
     dcc.Store(id='selected-types-store', data=[]),
+    dcc.Store(id='event-window-store', data=EVENT_TIME_WINDOW_DAYS),
+    
     
     # Main content: map and resource list side by side
     html.Div([
@@ -122,18 +116,49 @@ app.layout = html.Div([
     [
         Input('resources-store', 'data'),
         Input({'type': 'filter-pill', 'index': ALL}, 'n_clicks'),
+        Input('event-window-store', 'data')
+
     ],
     [
         State('selected-types-store', 'data'),
         State({'type': 'filter-pill', 'index': ALL}, 'id'),
     ]
 )
-def generate_pills_and_update_selection(resources_data, n_clicks_list, current_selected, pill_ids):
+def generate_pills_and_update_selection(resources_data, n_clicks_list, selected_window, current_selected, pill_ids):
     import json
-    
+
     # Compute unique types from resources
     types = compute_unique_types(resources_data)
     pill_filters = types + [EVENTS_PILL]
+    
+    if not current_selected:
+        current_selected = types
+
+    # Determine what triggered the callback
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        # Initial load: select all types except 'places with events'
+        current_selected = types
+    else:
+        trigger = ctx.triggered[0]['prop_id']
+        # If resources changed, reset selected types to all except 'places with events'
+        if trigger.startswith('resources-store.'):
+            current_selected = types
+        else:
+            # Otherwise, a pill was clicked -> toggle selection
+            try:
+                trigger_id = json.loads(trigger.split('.')[0])
+                clicked_type = trigger_id.get('index')
+            except Exception:
+                clicked_type = None
+
+            # Start from current_selected, but ensure it's a subset of available types
+            current_selected = [t for t in (current_selected or []) if t in pill_filters]
+            if clicked_type:
+                if clicked_type in current_selected:
+                    current_selected.remove(clicked_type)
+                else:
+                    current_selected.append(clicked_type)
 
     # Build pill buttons
     pills = [
@@ -145,33 +170,35 @@ def generate_pills_and_update_selection(resources_data, n_clicks_list, current_s
         ) for t in pill_filters
     ]
 
-    # Determine what triggered the callback
-    ctx = dash.callback_context
-    if not ctx.triggered:
-        # Initial load: select all types except 'places with events'
-        return pills, types
-
-    trigger = ctx.triggered[0]['prop_id']
-    # If resources changed, reset selected types to all except 'places with events'
-    if trigger.startswith('resources-store.'):
-        return pills, types
-
-    # Otherwise, a pill was clicked -> toggle selection
-    try:
-        trigger_id = json.loads(trigger.split('.')[0])
-        clicked_type = trigger_id.get('index')
-    except Exception:
-        clicked_type = None
-
-    # Start from current_selected, but ensure it's a subset of available types
-    current_selected = [t for t in (current_selected or []) if t in pill_filters]
-    if clicked_type:
-        if clicked_type in current_selected:
-            current_selected.remove(clicked_type)
-        else:
-            current_selected.append(clicked_type)
+    # Now this works as expected!
+    if EVENTS_PILL in (current_selected or []):
+        for tw in EVENT_TIME_WINDOWS:
+            pills.append(
+                html.Button(
+                    tw["label"],
+                    id={'type': 'event-window-pill', 'index': tw["value"]},
+                    className="filter-pill filter-pill--event" + (" active" if selected_window == tw["value"] else ""),
+                    n_clicks=0
+                )
+            )
 
     return pills, current_selected
+
+# Update event-window-store when the event-window pills are clicked
+@app.callback(
+    Output('event-window-store', 'data'),
+    [Input({'type': 'event-window-pill', 'index': ALL}, 'n_clicks')],
+    [State({'type': 'event-window-pill', 'index': ALL}, 'id'),
+     State('event-window-store', 'data')]
+)
+def refresh_event_time_window(n_clicks_list, pill_ids, current_window):
+    if not n_clicks_list or not pill_ids:
+        return current_window
+    # Find which pill was clicked most recently
+    for n, pid in zip(n_clicks_list, pill_ids):
+        if n and pid:
+            return pid['index']
+    return current_window
 
 # Update pill styles using pattern-matching output
 @app.callback(
@@ -179,7 +206,7 @@ def generate_pills_and_update_selection(resources_data, n_clicks_list, current_s
     [Input('selected-types-store', 'data')],
     [State({'type': 'filter-pill', 'index': ALL}, 'id')]
 )
-def update_pill_styles_dynamic(selected_types, pill_ids):
+def update_filter_pill_styles(selected_types, pill_ids):
     selected_set = set(selected_types or [])
     classes = []
     for pid in (pill_ids or []):
@@ -190,6 +217,25 @@ def update_pill_styles_dynamic(selected_types, pill_ids):
         else:
             classes.append(base)
     return classes
+
+@app.callback(
+    Output('resources-store', 'data'),
+    [Input('event-window-store', 'data')]
+)
+def update_resources_on_time_window_change(selected_window):
+    # Reload places and events with the new interval
+    places_by_id, place_id_to_events = load_places_and_events(
+        AIRTABLE_API_KEY,
+        AIRTABLE_BASE_ID,
+        AIRTABLE_PLACES_TABLE_ID,
+        AIRTABLE_EVENTS_TABLE_ID,
+        interval_days=selected_window
+    )
+    # Prepare data for the store
+    return [
+        {**extract_place_info(p), 'events': place_id_to_events.get(p.get('id'), [])}
+        for p in places_by_id.values()
+    ]
 
 @app.callback(
     [Output('marker-layer', 'children'),

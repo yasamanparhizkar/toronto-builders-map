@@ -84,7 +84,7 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 8
 .pill-container { display:flex; flex-wrap:wrap; gap:8px; flex:1; }
 .filter-label { font-weight:600; color: var(--text-primary); font-size:0.95rem; white-space:nowrap; margin-top:8px; }
 .filter-content { display:flex; align-items:flex-start; gap:16px; flex-wrap:wrap; }
-.filter-pill { background: var(--surface-secondary); color: var(--text-secondary); border:1px solid var(--border-medium); border-radius:20px; padding:8px 16px; font-size:0.9rem; font-weight:500; cursor:pointer; font-family:inherit; outline:none; white-space:nowrap; transition:.2s; }
+.filter-pill { background: var(--surface-secondary); color: var(--text-secondary); border:1px solid var(--border-medium); border-radius:20px; padding:8px 16px; font-size:0.85rem; font-weight:500; cursor:pointer; font-family:inherit; outline:none; white-space:nowrap; transition:.2s; }
 .filter-pill:hover { background: var(--surface-primary); border-color: var(--primary-blue); color: var(--text-primary); transform:translateY(-1px); box-shadow: var(--shadow-subtle); }
 .filter-pill.active { background: var(--primary-blue); color:#fff; border-color: var(--primary-blue); box-shadow: var(--shadow-subtle); }
 .filter-pill.active:hover { background: var(--primary-blue-hover); border-color: var(--primary-blue-hover); }
@@ -176,7 +176,7 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 8
   h1 { font-size:2rem; }
   .filter-content { flex-direction:column; align-items:stretch; gap:12px; }
   .filter-label { text-align:left; margin-top:0; }
-  .filter-pill { font-size:0.85rem; padding:6px 12px; }
+  .filter-pill { font-size:0.75rem; padding:4px 8px; }
   .leaflet-container { height:60vh !important; min-height:400px; }
   .main-content { flex-direction:column; }
   .resource-list-container { border-left:none; padding-left:0; }
