@@ -23,6 +23,13 @@ def coerce_value(value, type_decl):
         return [str(value)] if value else []
     return value
 
+def coerce_from_schema(fields, schema, key):
+    value = fields.get(key)
+    type_decl = schema[key]['type']
+    default = schema[key]['default']
+    coerced = coerce_value(value, type_decl)
+    return coerced if coerced is not None else default
+
 
 # Utility helpers for consistent rendering and filtering
 def normalize_lat_lon(lat, lon):

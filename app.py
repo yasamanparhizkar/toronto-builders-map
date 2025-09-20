@@ -3,12 +3,9 @@ from dash import html, dcc, Output, Input, State, ALL
 import dash_leaflet as dl
 from pyairtable import Table
 import os
-from collections import defaultdict
 from config.helpers import *
 from config.schema import EVENTS_SCHEMA
-
-# for handling one-time events
-from datetime import datetime, timedelta
+from services.data_loader import load_places_and_events
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -24,78 +21,13 @@ EVENTS_PILL = "Only Places with Events"
 if not (AIRTABLE_API_KEY and AIRTABLE_BASE_ID and AIRTABLE_PLACES_TABLE_ID and AIRTABLE_EVENTS_TABLE_ID):
     raise RuntimeError("Missing Airtable environment variables (API key, base id, places table id, or events table id).")
 
-# Query places
-table = Table(AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_PLACES_TABLE_ID)
-places = table.all()
-places_by_id = {r.get('id'): r for r in places}
-
-# Query events and link them to places
-events_table = Table(AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_EVENTS_TABLE_ID)
-events = events_table.all()
-
-# Build a mapping from place name to id for robustness (in case events reference names)
-place_name_to_id = {}
-for p in places:
-    fields = p.get('fields', {})
-    name = fields.get('Name')
-    if name:
-        place_name_to_id[str(name).strip()] = p.get('id')
-
-place_id_to_events = defaultdict(list)
-
-for ev in events:
-    f = ev.get('fields', {})
-    raw_url = f.get('Official Link')
-    
-    if not raw_url: #we're not adding events without URL
-        continue
-    
-    # Coerce fields according to EVENTS_SCHEMA
-    name = coerce_value(
-        f.get('Name'),
-        EVENTS_SCHEMA['Name']['type']
-    ) or EVENTS_SCHEMA['Name']['default']
-    
-    url = coerce_value(
-        raw_url,
-        EVENTS_SCHEMA['Official Link']['type']
-    )
-    
-    ev_item = {
-        'name': name,
-        'url': url,
-        # Optional extras kept for future display if needed
-        'recurrence': coerce_value(f.get('Recurrence'), EVENTS_SCHEMA['Recurrence']['type']) or EVENTS_SCHEMA['Recurrence']['default'],
-        'when': coerce_value(f.get('When (if recurrent)'), EVENTS_SCHEMA['When (if recurrent)']['type']) or EVENTS_SCHEMA['When (if recurrent)']['default'],
-        'date': coerce_value(f.get('Date (if not recurrent)'), EVENTS_SCHEMA['Date (if not recurrent)']['type']) or EVENTS_SCHEMA['Date (if not recurrent)']['default'],
-    }
-
-    # Determine which place(s) this event is linked to
-    place_ids = []
-    place_field = coerce_value(f.get('Place') or f.get('Places'), EVENTS_SCHEMA['Place']['type'])
-    from_names = coerce_value(f.get('Name (from Place)'), EVENTS_SCHEMA['Name (from Place)']['type'])
-
-    if isinstance(place_field, list) and place_field:
-        for p in place_field:
-            if isinstance(p, str) and p.startswith('rec'):
-                place_ids.append(p)
-            elif isinstance(p, str):
-                pid = place_name_to_id.get(p.strip())
-                if pid:
-                    place_ids.append(pid)
-    elif isinstance(place_field, str):
-        pid = place_name_to_id.get(place_field.strip())
-        if pid:
-            place_ids.append(pid)
-
-    if not place_ids and from_names:
-        for p in (from_names if isinstance(from_names, list) else [from_names]):
-            pid = place_name_to_id.get(str(p).strip())
-            if pid:
-                place_ids.append(pid)
-
-    for pid in place_ids:
-        place_id_to_events[pid].append(ev_item)
+# Load places and events
+places_by_id, place_id_to_events = load_places_and_events(
+    AIRTABLE_API_KEY,
+    AIRTABLE_BASE_ID,
+    AIRTABLE_PLACES_TABLE_ID,
+    AIRTABLE_EVENTS_TABLE_ID
+)
 
 app = dash.Dash(__name__, external_stylesheets=[
     'https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&display=swap'
@@ -144,8 +76,8 @@ app.layout = html.Div([
     dcc.Store(
         id='resources-store',
         data=[
-            {**extract_resource_info(r), 'events': place_id_to_events.get(r.get('id'), [])}
-            for r in places
+            {**extract_resource_info(p), 'events': place_id_to_events.get(p.get('id'), [])}
+            for p in places_by_id.values()
         ]
     ),
     dcc.Store(id='selected-types-store', data=[]),
