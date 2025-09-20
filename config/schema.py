@@ -1,4 +1,4 @@
-SCHEMA = {
+PLACES_SCHEMA = {
     'Name': {
         'type': 'str',
         'default': 'Unnamed Location',

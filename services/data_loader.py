@@ -35,10 +35,9 @@ def load_places_and_events(
                 - 'when' (str or None): Recurrence description (if any)
                 - 'date' (datetime or None): Event date (for one-time events)
     """
-    if not end_date:
-      # add 14 days to start_date
-      end_date = start_date + timedelta(days=interval_days)
-  
+    # End date to filter one-time events
+    end_date = start_date + timedelta(days=interval_days)
+    
     # Query places
     table = Table(api_key, base_id, places_table_id)
     places = table.all()

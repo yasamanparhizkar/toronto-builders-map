@@ -1,4 +1,4 @@
-from config.schema import SCHEMA
+from config.schema import PLACES_SCHEMA
 from dash import html, dcc
 
 # Helper: normalize/coerce values by type (based on the data type specified on the schema)
@@ -81,22 +81,34 @@ def build_popup_content(name, types, notes, url, events=None):
     ])
 
 
-def extract_resource_info(r):
-    fields = r.get('fields', {})
+def extract_place_info(r):
+    """
+    Args:
+        r (dict): Record as dictionary. It is expected to contain an 'id'
+            key and a 'fields' dictionary with keys 'Name', 'Type',
+            'Latitude', 'Longitude', 'Notes', and 'Google Maps link'.
 
-    name = coerce_value(fields.get('Name'), SCHEMA['Name']['type']) or SCHEMA['Name']['default']
-
-    types = coerce_value(fields.get('Type'), SCHEMA['Type']['type']) or SCHEMA['Type']['default']
-
-    lat = coerce_value(fields.get('Latitude'), SCHEMA['Latitude']['type'])
-    lon = coerce_value(fields.get('Longitude'), SCHEMA['Longitude']['type'])
+    Returns:
+        dict: A cleaned dictionary containing the resource's information with
+            the following keys:
+            - 'id' (str): The unique identifier of the record.
+            - 'name' (str): The name of the place.
+            - 'types' (list): A list of types associated with the place.
+            - 'lat' (float): The normalized latitude.
+            - 'lon' (float): The normalized longitude.
+            - 'notes' (str): Any notes associated with the place.
+            - 'url' (str): A URL to the place on Google Maps.
+    """
+    f = r.get('fields', {})
+    coerce_places_schema = lambda key: coerce_from_schema(f, PLACES_SCHEMA, key)
+    
+    name = coerce_places_schema('Name')
+    types = coerce_places_schema('Type')
+    lat = coerce_places_schema('Latitude')
+    lon = coerce_places_schema('Longitude')
     lat, lon = normalize_lat_lon(lat, lon)
-
-    notes = coerce_value(fields.get('Notes'), SCHEMA['Notes']['type'])
-    if notes is None:
-        notes = SCHEMA['Notes']['default']
-
-    url = coerce_value(fields.get('Google Maps link'), SCHEMA['Google Maps link']['type']) or SCHEMA['Google Maps link']['default']
+    notes = coerce_places_schema('Notes')
+    url = coerce_places_schema('Google Maps link')
 
     return {
         'id': r.get('id'),
@@ -117,6 +129,7 @@ def is_within_bounds(lat, lon, bounds):
     except Exception:
         return True
     # Handle antimeridian crossing
+    # comment by a human: this was added by Cpilot and it is unnecessary since the app is toronto only but whatever, I'm keeping it because it doesn't hurt
     in_lat = south <= lat <= north
     if west <= east:
         in_lon = west <= lon <= east

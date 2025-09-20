@@ -76,7 +76,7 @@ app.layout = html.Div([
     dcc.Store(
         id='resources-store',
         data=[
-            {**extract_resource_info(p), 'events': place_id_to_events.get(p.get('id'), [])}
+            {**extract_place_info(p), 'events': place_id_to_events.get(p.get('id'), [])}
             for p in places_by_id.values()
         ]
     ),
