@@ -65,10 +65,10 @@ app.layout = html.Div([
     html.Div([
         html.Div([
             html.Div([
-                html.Span("Filters:", className="filter-label")
+                html.Span(className="filter-label")
             ]),
             html.Div(id="pill-container", className="pill-container"),
-            html.P(id="results-info", className="notes")
+            html.P(id="results-info", className="results-info")
         ], className="filter-content")
     ], className="filter-container"),
     
@@ -192,7 +192,9 @@ def update_pill_styles_dynamic(selected_types, pill_ids):
     return classes
 
 @app.callback(
-    [Output('marker-layer', 'children'), Output('results-info', 'children'), Output('resource-list', 'children')],
+    [Output('marker-layer', 'children'),
+     Output('results-info', 'children'),
+     Output('resource-list', 'children')],
     [Input('selected-types-store', 'data'), Input('main-map', 'bounds')],
     [State('resources-store', 'data')]
 )

@@ -8,7 +8,12 @@ import os
 from datetime import datetime, timedelta
 
 
-def load_places_and_events(api_key, base_id, places_table_id, events_table_id, start_date=datetime.today(), end_date=None):
+def load_places_and_events(
+    # airtable keys / ids
+    api_key, base_id, places_table_id, events_table_id,
+    # date filters
+    start_date=datetime.today(),
+    interval_days=14):
     """
     Loads places and their associated events from Airtable tables.
 
@@ -18,7 +23,7 @@ def load_places_and_events(api_key, base_id, places_table_id, events_table_id, s
         places_table_id (str): Table ID for places.
         events_table_id (str): Table ID for events.
         start_date (datetime, optional): Start date for filtering one-time events. Defaults to today.
-        end_date (datetime, optional): End date for filtering one-time events. Defaults to 14 days after start_date.
+        interval_days (int, optional): Number of days after start_date to set end_date. Defaults to 14.
 
     Returns:
         tuple:
@@ -32,7 +37,7 @@ def load_places_and_events(api_key, base_id, places_table_id, events_table_id, s
     """
     if not end_date:
       # add 14 days to start_date
-      end_date = start_date + timedelta(days=14)
+      end_date = start_date + timedelta(days=interval_days)
   
     # Query places
     table = Table(api_key, base_id, places_table_id)
