@@ -117,7 +117,6 @@ app.layout = html.Div([
         Input('resources-store', 'data'),
         Input({'type': 'filter-pill', 'index': ALL}, 'n_clicks'),
         Input('event-window-store', 'data')
-
     ],
     [
         State('selected-types-store', 'data'),
@@ -127,38 +126,57 @@ app.layout = html.Div([
 def generate_pills_and_update_selection(resources_data, n_clicks_list, selected_window, current_selected, pill_ids):
     import json
 
-    # Compute unique types from resources
     types = compute_unique_types(resources_data)
     pill_filters = types + [EVENTS_PILL]
-    
-    if not current_selected:
+
+    # Default: all selected (full state)
+    if not current_selected or set(current_selected) == set():
         current_selected = types
 
-    # Determine what triggered the callback
     ctx = dash.callback_context
     if not ctx.triggered:
-        # Initial load: select all types except 'places with events'
+        # Initial load: full state
         current_selected = types
     else:
         trigger = ctx.triggered[0]['prop_id']
-        # If resources changed, reset selected types to all except 'places with events'
         if trigger.startswith('resources-store.'):
             current_selected = types
         else:
-            # Otherwise, a pill was clicked -> toggle selection
+            # Pill click
             try:
                 trigger_id = json.loads(trigger.split('.')[0])
                 clicked_type = trigger_id.get('index')
             except Exception:
                 clicked_type = None
 
-            # Start from current_selected, but ensure it's a subset of available types
-            current_selected = [t for t in (current_selected or []) if t in pill_filters]
-            if clicked_type:
-                if clicked_type in current_selected:
-                    current_selected.remove(clicked_type)
+            # Only handle place-type pills (not event window)
+            if clicked_type and clicked_type in types:
+                # FULL STATE: all selected
+                if set(current_selected) == set(types):
+                    # Clicking any pill: go to partial state with only that pill
+                    current_selected = [clicked_type]
+                # PARTIAL STATE
                 else:
-                    current_selected.append(clicked_type)
+                    if clicked_type in current_selected:
+                        # If only one selected and it's clicked again: go back to full state
+                        if len(current_selected) == 1:
+                            current_selected = types
+                        else:
+                            # Remove it from selection
+                            current_selected = [t for t in current_selected if t != clicked_type]
+                    else:
+                        # Add it to selection
+                        current_selected = current_selected + [clicked_type]
+
+            # Handle EVENTS_PILL as before (optional: you can adapt similar logic if needed)
+            elif clicked_type == EVENTS_PILL:
+                if EVENTS_PILL in current_selected:
+                    current_selected = [t for t in current_selected if t != EVENTS_PILL]
+                else:
+                    current_selected = current_selected + [EVENTS_PILL]
+
+            # Ensure only valid types
+            current_selected = [t for t in current_selected if t in pill_filters]
 
     # Build pill buttons
     pills = [
@@ -170,7 +188,6 @@ def generate_pills_and_update_selection(resources_data, n_clicks_list, selected_
         ) for t in pill_filters
     ]
 
-    # Now this works as expected!
     if EVENTS_PILL in (current_selected or []):
         for tw in EVENT_TIME_WINDOWS:
             pills.append(
