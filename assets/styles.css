@@ -187,6 +187,8 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 v
 .pill-container { display:flex; flex-wrap:wrap; gap: var(--space-2); flex:1; }
 .filter-label { font-weight:600; color: var(--text-primary); font-size:0.95rem; white-space:nowrap; margin-top:8px; }
 .filter-content { display:flex; align-items:flex-start; gap: var(--space-4); flex-wrap:wrap; }
+.event-window-group { display:none; gap: var(--space-2); }
+.show-event-window .event-window-group { display:flex; }
 .filter-pill { background: var(--surface-secondary); color: var(--text-secondary); border:1px solid var(--border-medium); border-radius: var(--radius-xl); padding: var(--space-2) var(--space-4); font-size:0.85rem; font-weight:500; cursor:pointer; font-family:inherit; outline:none; white-space:nowrap; transition:.2s; }
 .filter-pill:hover { background: var(--surface-primary); border-color: var(--primary-blue); color: var(--text-primary); transform:translateY(-1px); box-shadow: var(--shadow-subtle); }
 .filter-pill:focus-visible { outline: 2px solid transparent; box-shadow: 0 0 0 2px rgba(124,58,237,0.25), 0 0 0 4px rgba(34,211,238,0.18); }

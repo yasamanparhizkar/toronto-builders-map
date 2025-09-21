@@ -1,5 +1,5 @@
 import dash
-from dash import html, dcc, Output, Input, State, ALL
+from dash import html, dcc, Output, Input, State, ALL, no_update
 import dash_leaflet as dl
 import os
 from config.helpers import *
@@ -115,78 +115,25 @@ app.layout = html.Div([
     ])
 ], className="_dash-container")
 
-# Dynamically generate pills and manage selected types in one callback
-@app.callback(
-    [
-        Output('pill-container', 'children'),
-        Output('selected-types-store', 'data'),
-    ],
-    [
-        Input('resources-store', 'data'),
-        Input({'type': 'filter-pill', 'index': ALL}, 'n_clicks'),
-        Input('event-window-store', 'data')
-    ],
-    [
-        State('selected-types-store', 'data'),
-        State({'type': 'filter-pill', 'index': ALL}, 'id'),
-    ]
-)
-def generate_pills_and_update_selection(resources_data, n_clicks_list, selected_window, current_selected, pill_ids):
-    import json
+"""
+Performance refactor: separate concerns so clicking pills doesn't re-render children.
 
+1) Build pills only from resources data (types) and always include event-window pills in a group.
+2) Update selection state from clicks in a small callback (no DOM rebuild).
+3) Toggle container class to show/hide the event-window group based on EVENTS_PILL selection.
+4) Independently set active style for event-window pills from event-window-store.
+"""
+
+# 1) Build pills (types + EVENTS_PILL + event-window group)
+@app.callback(
+    Output('pill-container', 'children'),
+    Input('resources-store', 'data')
+)
+def build_pills(resources_data):
     types = compute_unique_types(resources_data)
     pill_filters = types + [EVENTS_PILL]
 
-    # Default: all selected (full state)
-    if not current_selected or set(current_selected) == set():
-        current_selected = types
-
-    ctx = dash.callback_context
-    if not ctx.triggered:
-        # Initial load: full state
-        current_selected = types
-    else:
-        trigger = ctx.triggered[0]['prop_id']
-        if trigger.startswith('resources-store.'):
-            current_selected = types
-        else:
-            # Pill click
-            try:
-                trigger_id = json.loads(trigger.split('.')[0])
-                clicked_type = trigger_id.get('index')
-            except Exception:
-                clicked_type = None
-
-            # Only handle place-type pills (not event window)
-            if clicked_type and clicked_type in types:
-                # FULL STATE: all selected
-                if set(current_selected) == set(types):
-                    # Clicking any pill: go to partial state with only that pill
-                    current_selected = [clicked_type]
-                # PARTIAL STATE
-                else:
-                    if clicked_type in current_selected:
-                        # If only one selected and it's clicked again: go back to full state
-                        if len(current_selected) == 1:
-                            current_selected = types
-                        else:
-                            # Remove it from selection
-                            current_selected = [t for t in current_selected if t != clicked_type]
-                    else:
-                        # Add it to selection
-                        current_selected = current_selected + [clicked_type]
-
-            # Handle EVENTS_PILL as before (optional: you can adapt similar logic if needed)
-            elif clicked_type == EVENTS_PILL:
-                if EVENTS_PILL in current_selected:
-                    current_selected = [t for t in current_selected if t != EVENTS_PILL]
-                else:
-                    current_selected = current_selected + [EVENTS_PILL]
-
-            # Ensure only valid types
-            current_selected = [t for t in current_selected if t in pill_filters]
-
-    # Build pill buttons
+    # Base type pills + EVENTS_PILL
     pills = [
         html.Button(
             t,
@@ -196,18 +143,79 @@ def generate_pills_and_update_selection(resources_data, n_clicks_list, selected_
         ) for t in pill_filters
     ]
 
-    if EVENTS_PILL in (current_selected or []):
-        for tw in EVENT_TIME_WINDOWS:
-            pills.append(
-                html.Button(
-                    tw["label"],
-                    id={'type': 'event-window-pill', 'index': tw["value"]},
-                    className="filter-pill filter-pill--event" + (" active" if selected_window == tw["value"] else ""),
-                    n_clicks=0
-                )
-            )
+    # Always add the event window group; visibility is controlled by container class
+    window_pills = [
+        html.Button(
+            tw["label"],
+            id={'type': 'event-window-pill', 'index': tw["value"]},
+            className="filter-pill filter-pill--event",
+            n_clicks=0
+        ) for tw in EVENT_TIME_WINDOWS
+    ]
+    pills.append(html.Div(window_pills, className='event-window-group'))
+    return pills
 
-    return pills, current_selected
+# 2) Update selected types from clicks (keep original selection rules)
+@app.callback(
+    Output('selected-types-store', 'data'),
+    Input({'type': 'filter-pill', 'index': ALL}, 'n_clicks'),
+    [State('resources-store', 'data'), State('selected-types-store', 'data'), State({'type': 'filter-pill', 'index': ALL}, 'id')]
+)
+def update_selected_types(n_clicks_list, resources_data, current_selected, pill_ids):
+    import json
+    types = compute_unique_types(resources_data)
+    pill_filters = types + [EVENTS_PILL]
+
+    # Default: all selected (full state)
+    if not current_selected or set(current_selected) == set():
+        current_selected = types
+
+    ctx = dash.callback_context
+    # If nothing was clicked yet (all are None/0), keep/show full set
+    if not ctx.triggered or not any(n_clicks_list or []):
+        return types
+
+    trigger = ctx.triggered[0]['prop_id']
+    try:
+        trigger_id = json.loads(trigger.split('.')[0])
+        clicked_type = trigger_id.get('index')
+    except Exception:
+        clicked_type = None
+
+    if clicked_type and clicked_type in types:
+        # FULL STATE: all selected
+        if set(current_selected) == set(types):
+            return [clicked_type]
+        # PARTIAL STATE
+        if clicked_type in current_selected:
+            # If only one selected and it's clicked again: go back to full state
+            if len(current_selected) == 1:
+                return types
+            # Remove it from selection
+            return [t for t in current_selected if t != clicked_type]
+        else:
+            # Add it to selection
+            return current_selected + [clicked_type]
+    elif clicked_type == EVENTS_PILL:
+        if EVENTS_PILL in current_selected:
+            return [t for t in current_selected if t != EVENTS_PILL]
+        else:
+            return current_selected + [EVENTS_PILL]
+
+    # Fallback: ensure only valid types
+    return [t for t in (current_selected or []) if t in pill_filters]
+
+# Initialize selection when resources arrive and no selection set yet
+@app.callback(
+    Output('selected-types-store', 'data', allow_duplicate=True),
+    Input('resources-store', 'data'),
+    State('selected-types-store', 'data'),
+    prevent_initial_call=True
+)
+def init_selected_types(resources_data, current_selected):
+    if current_selected:
+        return no_update
+    return compute_unique_types(resources_data)
 
 # Update event-window-store when the event-window pills are clicked
 @app.callback(
@@ -239,6 +247,33 @@ def update_filter_pill_styles(selected_types, pill_ids):
         base = "filter-pill filter-pill--event" if label == EVENTS_PILL else "filter-pill"
         if label in selected_set:
             classes.append(f"{base} active")
+        else:
+            classes.append(base)
+    return classes
+
+# 3) Toggle visibility of the event-window group without rebuilding
+@app.callback(
+    Output('pill-container', 'className'),
+    Input('selected-types-store', 'data')
+)
+def toggle_event_window_group(selected_types):
+    css = 'pill-container'
+    if EVENTS_PILL in (selected_types or []):
+        css += ' show-event-window'
+    return css
+
+# 4) Independently activate the correct event-window pill based on the store
+@app.callback(
+    Output({'type': 'event-window-pill', 'index': ALL}, 'className'),
+    [Input('event-window-store', 'data')],
+    [State({'type': 'event-window-pill', 'index': ALL}, 'id')]
+)
+def update_event_window_pill_styles(selected_window, pill_ids):
+    classes = []
+    for pid in (pill_ids or []):
+        base = 'filter-pill filter-pill--event'
+        if pid and pid.get('index') == selected_window:
+            classes.append(base + ' active')
         else:
             classes.append(base)
     return classes
