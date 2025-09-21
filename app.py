@@ -80,19 +80,18 @@ app.layout = html.Div([
     # Filter section
     html.Div([
         html.Div([
-            html.Div([
-                html.Span(className="filter-label")
-            ]),
-            html.Div(id="pill-container", className="pill-container")
+            html.Div(id="pill-container",
+                     className="pill-container")
         ], className="filter-content")
     ], className="filter-container"),
     
     # Hidden stores
-    dcc.Store(id='resources-store'),
+    dcc.Store(id='places-store'),
     dcc.Store(id='selected-types-store', data=[]),
     dcc.Store(id='event-window-store', data=EVENT_TIME_WINDOW_DAYS),
     dcc.Store(id='map-bounds-store'), 
-    dcc.Interval(id='startup-refresh', interval=100, n_intervals=0, max_intervals=1),  
+    dcc.Store(id='all-types-store', data=[]),
+    dcc.Interval(id='startup-refresh', interval=0, n_intervals=0, max_intervals=1),  
     
     
     # Main content: map and resource list side by side
@@ -149,27 +148,26 @@ Performance refactor: separate concerns so clicking pills doesn't re-render chil
 4) Independently set active style for event-window pills from event-window-store.
 """
 
-# 1) Build pills (types + EVENTS_PILL + event-window group)
+# 1) Build filter pills (types + EVENTS_PILL + event-window group)
 @app.callback(
     Output('pill-container', 'children'),
-    Input('resources-store', 'data')
+    Input('all-types-store', 'data')
 )
-def build_pills(resources_data):
-    types = compute_unique_types(resources_data)
-    pill_filters = types + [EVENTS_PILL]
+def build_filter_pills(all_types):
+    pill_filters = all_types + [EVENTS_PILL]
 
-    # Base type pills + EVENTS_PILL
     pills = [
         html.Button(
-            t,
-            id={'type': 'filter-pill', 'index': t},
-            className="filter-pill filter-pill--event" if t == EVENTS_PILL else "filter-pill",
+            text,
+            id={'type': 'filter-pill', 'index': text},
+            # EVENTS_PILL is visually distinct
+            className="filter-pill filter-pill--event" if text == EVENTS_PILL else "filter-pill",
             n_clicks=0
-        ) for t in pill_filters
+        ) for text in pill_filters
     ]
 
     # Always add the event window group; visibility is controlled by container class
-    window_pills = [
+    time_window_pills = [
         html.Button(
             tw["label"],
             id={'type': 'event-window-pill', 'index': tw["value"]},
@@ -177,70 +175,96 @@ def build_pills(resources_data):
             n_clicks=0
         ) for tw in EVENT_TIME_WINDOWS
     ]
-    pills.append(html.Div(window_pills, className='event-window-group'))
+    
+    pills.append(html.Div(time_window_pills, className='event-window-group'))
+    
     return pills
 
 # 2) Update selected types from clicks (keep original selection rules)
 @app.callback(
     Output('selected-types-store', 'data'),
     Input({'type': 'filter-pill', 'index': ALL}, 'n_clicks'),
-    [State('resources-store', 'data'), State('selected-types-store', 'data'), State({'type': 'filter-pill', 'index': ALL}, 'id')]
-)
-def update_selected_types(n_clicks_list, resources_data, current_selected, pill_ids):
+    [State('places-store', 'data'),
+     State('selected-types-store', 'data')])
+def update_selected_types(n_clicks_list, resources_data, current_selected):
     import json
-    types = compute_unique_types(resources_data)
+    types = get_places_types(resources_data)
     pill_filters = types + [EVENTS_PILL]
-
-    # Default: all selected (full state)
-    if not current_selected or set(current_selected) == set():
-        current_selected = types
-
+    
+    selected_excluding_events = [t for t in current_selected if t != EVENTS_PILL]
+    selected_event_pill = [t for t in current_selected if t == EVENTS_PILL]
+    
+    # We must differentiate based on what pills are currently selected
+    # 1. if no 'types' pills are selected, turn THOSE pills on (types)
+    # but we honour he previous state of events_pills
+    #if not any(t in (current_selected or []) for t in types):
+    if not selected_excluding_events:
+        current_selected += types
+        
     ctx = dash.callback_context
     # If nothing was clicked yet (all are None/0), keep/show full set
+    # why am I asking this if this callback is triggeed UPON CLICKS?
     if not ctx.triggered or not any(n_clicks_list or []):
         return types
 
     trigger = ctx.triggered[0]['prop_id']
     try:
         trigger_id = json.loads(trigger.split('.')[0])
+        # trigger_id example {"index":"Only Places with Events","type":"filter-pill"}
         clicked_type = trigger_id.get('index')
+        # clicked type is the text of the button (e.g. Coffee shop, Only Places with Events)
     except Exception:
         clicked_type = None
-
+        
     if clicked_type and clicked_type in types:
+        # if the user clicked on a Place type
         # FULL STATE: all selected
-        if set(current_selected) == set(types):
-            return [clicked_type]
+        if set(selected_excluding_events) == set(types):
+            return [clicked_type]+selected_event_pill
+        
         # PARTIAL STATE
         if clicked_type in current_selected:
             # If only one selected and it's clicked again: go back to full state
-            if len(current_selected) == 1:
-                return types
-            # Remove it from selection
+            if len(selected_excluding_events) == 1:
+                return types+selected_event_pill
+            # Otherwise, remove it from selection
             return [t for t in current_selected if t != clicked_type]
         else:
             # Add it to selection
             return current_selected + [clicked_type]
+    # this looks OK
     elif clicked_type == EVENTS_PILL:
         if EVENTS_PILL in current_selected:
-            return [t for t in current_selected if t != EVENTS_PILL]
+            return selected_excluding_events
         else:
             return current_selected + [EVENTS_PILL]
 
     # Fallback: ensure only valid types
-    return [t for t in (current_selected or []) if t in pill_filters]
+    return [t for t in current_selected if t in pill_filters]
 
-# Initialize selection when resources arrive and no selection set yet
+# On app startup, populate the all-types-store with ALL place types
+@app.callback(
+    Output('all-types-store', 'data'),
+    Input('startup-refresh', 'n_intervals'),
+    prevent_initial_call=True
+)
+def init_all_types(n_intervals):
+    # Load ALL data without time window filtering to get the complete set of types
+    places_by_id, _ = cached_places_and_events(999)  # Use a large window to get all types
+    return get_places_types([extract_place_info(p) for p in places_by_id.values()])
+
+
+# Initialize selection when places arrive and no selection set yet
 @app.callback(
     Output('selected-types-store', 'data', allow_duplicate=True),
-    Input('resources-store', 'data'),
+    Input('places-store', 'data'),
     State('selected-types-store', 'data'),
     prevent_initial_call=True
 )
 def init_selected_types(resources_data, current_selected):
     if current_selected:
         return no_update
-    return compute_unique_types(resources_data)
+    return get_places_types(resources_data)
 
 # add this once (you already have Output/Input imported)
 # Debounced clientside callback: writes stable bounds to map-bounds-store
@@ -276,7 +300,6 @@ app.clientside_callback(
     Input('main-map', 'bounds')
 )
 
-
 # Update event-window-store when the event-window pills are clicked
 @app.callback(
     Output('event-window-store', 'data'),
@@ -287,11 +310,22 @@ app.clientside_callback(
 def refresh_event_time_window(n_clicks_list, pill_ids, current_window):
     if not n_clicks_list or not pill_ids:
         return current_window
-    # Find which pill was clicked most recently
-    for n, pid in zip(n_clicks_list, pill_ids):
-        if n and pid:
-            return pid['index']
-    return current_window
+    
+    # Use callback context to determine which pill was clicked
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return current_window
+        
+    # Get the index of the clicked pill
+    trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    try:
+        import json
+        clicked_pill_idx = json.loads(trigger_id)['index']
+        # Return the clicked pill's value directly
+        return clicked_pill_idx
+    except:
+        # If parsing fails, return current value
+        return current_window
 
 # Update pill styles using pattern-matching output
 @app.callback(
@@ -340,16 +374,21 @@ def update_event_window_pill_styles(selected_window, pill_ids):
 
 @cache.memoize()
 def cached_places_and_events(interval_days):
+    # Include today's date in the cache key to ensure freshness
+    import datetime
+    today = datetime.datetime.now().strftime('%Y-%m-%d')
+    
     return load_places_and_events(
         AIRTABLE_API_KEY,
         AIRTABLE_BASE_ID,
         AIRTABLE_PLACES_TABLE_ID,
         AIRTABLE_EVENTS_TABLE_ID,
-        interval_days=interval_days
+        interval_days=interval_days,
+        cache_date=today  # Pass as an unused parameter to create a unique cache key
     )
 
 @app.callback(
-    Output('resources-store', 'data'),
+    Output('places-store', 'data'),
     [Input('event-window-store', 'data'),
      Input('startup-refresh', 'n_intervals')]  # <--- Add this input
 )
@@ -386,8 +425,8 @@ def jump_to_preset_location(n_clicks):
      Output('results-info', 'children'),
      Output('resource-list', 'children')],
     [Input('selected-types-store', 'data'),
-     Input('map-bounds-store', 'data')],
-    [State('resources-store', 'data')]
+     Input('map-bounds-store', 'data'),
+     Input('places-store', 'data')]
 )
 def update_markers_info_and_list(selected_types, bounds, places_data):
     # center coordinates for sorting places
