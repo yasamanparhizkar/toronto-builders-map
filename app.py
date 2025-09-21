@@ -59,8 +59,8 @@ app.layout = html.Div([
             html.Iframe(
                 src="https://ghbtns.com/github-btn.html?user=yasamanparhizkar&repo=toronto-builders-map&type=star&count=true&size=large",
                 style={"border": "none", "overflow": "hidden", "width": "170px", "height": "30px"},
-                width="150",
-                height="20",
+                width="170",
+                height="30",
                 title="GitHub"
             ),
         ], className="header-cta-container")
@@ -94,7 +94,7 @@ app.layout = html.Div([
                 style={'height': '70vh', 'width': '100%'}, 
                 children=[
                     dl.TileLayer(
-                        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+                        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                     ),
                     dl.LayerGroup(id="marker-layer")

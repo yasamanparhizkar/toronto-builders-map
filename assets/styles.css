@@ -18,6 +18,19 @@
     --radius-lg: 16px;
     --radius-xl: 20px;
 
+  /* Builder/A16Z accents */
+  --accent-violet: #7C3AED;  /* violet */
+  --accent-cyan: #22D3EE;    /* cyan */
+  --accent-indigo: #4F46E5;  /* indigo */
+  --gradient-primary: linear-gradient(135deg, var(--accent-violet) 0%, var(--accent-cyan) 100%);
+  --gradient-primary-hover: linear-gradient(135deg, #8B5CF6 0%, #06B6D4 100%);
+  --grid-line: rgba(13, 13, 13, 0.05);
+  --glass-bg: rgba(255,255,255,0.66);
+  --glass-bg-strong: rgba(255,255,255,0.75);
+  --backdrop-blur: 12px;
+  --backdrop-saturation: 140%;
+  --shadow-glow: 0 12px 28px rgba(124,58,237,0.14), 0 8px 20px rgba(34,211,238,0.10);
+
   /* Event accent system */
   --event: #D7263D;            /* primary red accent for events */
   --event-bg: #FFF5F5;         /* subtle background for event elements */
@@ -43,19 +56,85 @@
   --z-floating: 1000;          /* floating UI like counters/badges */
 }
 
-body { background: var(--surface-tertiary); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Display', 'Helvetica Neue', sans-serif; margin:0; padding:0; color: var(--text-primary); line-height:1.5; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+/* Subtle grid + radial glow background for a "builder" vibe */
+body {
+  background-color: var(--surface-tertiary);
+  background-image:
+    radial-gradient(60% 80% at 100% 0%, rgba(124,58,237,0.12) 0%, rgba(124,58,237,0) 60%),
+    radial-gradient(60% 80% at 0% 100%, rgba(34,211,238,0.12) 0%, rgba(34,211,238,0) 60%),
+    /* grid */
+    linear-gradient(0deg, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    100% 100%,
+    24px 24px,
+    24px 24px;
+  background-position:
+    center,
+    center,
+    center,
+    center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Display', 'Helvetica Neue', Inter, system-ui, sans-serif;
+  margin:0;
+  padding:0;
+  color: var(--text-primary);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* Utilities to toggle the new visuals if needed */
+.no-grid body, body.no-grid {
+  background-image: none !important;
+}
+.no-glass .header-container,
+.no-glass .filter-container,
+.no-glass .map-container,
+body.no-glass .header-container,
+body.no-glass .filter-container,
+body.no-glass .map-container {
+  background: var(--surface-primary) !important;
+  border-color: var(--border-light) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: var(--shadow-medium) !important;
+}
+
+/* Gradient text utility for headings */
+.brand-gradient-text {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 
 /* Layout containers */
 ._dash-container { max-width:1200px; margin:0 auto; padding: var(--space-6); }
-.header-container, .filter-container, 
+.header-container, .filter-container,
 .map-container {
-    border-radius: var(--radius-xl);
+  border-radius: var(--radius-xl);
   padding: var(--space-4);
-    box-shadow: var(--shadow-large);
-    overflow:hidden;
-    position: relative;
+  /* Glassy surfaces with a subtle gradient glow */
+  background: var(--glass-bg);
+  backdrop-filter: saturate(var(--backdrop-saturation)) blur(var(--backdrop-blur));
+  -webkit-backdrop-filter: saturate(var(--backdrop-saturation)) blur(var(--backdrop-blur));
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-large), var(--shadow-glow);
+  overflow:hidden;
+  position: relative;
 }
-.header-container { border-radius: var(--radius-lg); padding:22px; margin-bottom:14px; box-shadow: var(--shadow-medium); display:flex; align-items:center; justify-content:space-between; gap: var(--space-4); }
+.header-container {
+  border-radius: var(--radius-lg);
+  padding:22px;
+  margin-bottom:14px;
+  box-shadow: var(--shadow-medium), var(--shadow-glow);
+  background: var(--glass-bg-strong);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: var(--space-4);
+}
 /* Flex header helpers */
 .header-meta { display:flex; flex-direction:column; gap: var(--space-1-5); flex:1 1 auto; min-width:0; }
 .header-cta { margin:0; white-space:nowrap; font-size:1.08rem; font-weight:500; text-decoration: none;}
@@ -87,7 +166,7 @@ body { background: var(--surface-tertiary); font-family: -apple-system, BlinkMac
     }
 }
 .filter-container { border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6); box-shadow: var(--shadow-medium); }
-.map-container { border-radius: var(--radius-xl); padding: var(--space-4); box-shadow: var(--shadow-large); overflow:hidden; }
+.map-container { border-radius: var(--radius-xl); padding: var(--space-4); box-shadow: var(--shadow-large), var(--shadow-glow); overflow:hidden; }
 .main-content { display:flex; flex-direction:row; gap:0; width:100%; }
 
 /* Headings & text */
@@ -102,7 +181,7 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 v
 
 /* Type badges */
 .type-badges { margin-bottom: var(--space-3); display:flex; flex-wrap:wrap; gap: var(--space-1); }
-.type-badge { background: var(--primary-blue); color: var(--white); padding:2px var(--space-2); border-radius: var(--radius-xxs); font-size:0.7rem; font-weight:500; display:inline-block; letter-spacing:.25px; }
+.type-badge { background: var(--gradient-primary); color: var(--white); padding:2px var(--space-2); border-radius: var(--radius-xxs); font-size:0.7rem; font-weight:600; display:inline-block; letter-spacing:.25px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 
 /* Filter pills */
 .pill-container { display:flex; flex-wrap:wrap; gap: var(--space-2); flex:1; }
@@ -110,13 +189,14 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 v
 .filter-content { display:flex; align-items:flex-start; gap: var(--space-4); flex-wrap:wrap; }
 .filter-pill { background: var(--surface-secondary); color: var(--text-secondary); border:1px solid var(--border-medium); border-radius: var(--radius-xl); padding: var(--space-2) var(--space-4); font-size:0.85rem; font-weight:500; cursor:pointer; font-family:inherit; outline:none; white-space:nowrap; transition:.2s; }
 .filter-pill:hover { background: var(--surface-primary); border-color: var(--primary-blue); color: var(--text-primary); transform:translateY(-1px); box-shadow: var(--shadow-subtle); }
-.filter-pill.active { background: var(--primary-blue); color: var(--white); border-color: var(--primary-blue); box-shadow: var(--shadow-subtle); }
-.filter-pill.active:hover { background: var(--primary-blue-hover); border-color: var(--primary-blue-hover); }
+.filter-pill:focus-visible { outline: 2px solid transparent; box-shadow: 0 0 0 2px rgba(124,58,237,0.25), 0 0 0 4px rgba(34,211,238,0.18); }
+.filter-pill.active:not(.filter-pill--event) { background: var(--gradient-primary); color: var(--white); border-color: transparent; box-shadow: var(--shadow-subtle), 0 6px 16px rgba(124,58,237,0.12); }
+.filter-pill.active:not(.filter-pill--event):hover { background: var(--gradient-primary-hover); }
 
 .filter-pill--event {
-  background: var(--event-bg) !important;
+  background: transparent !important;
   color: var(--event) !important;
-  border-color: var(--event-border) !important;
+  border-color: var(--event) !important;
 }
 
 /* Active and hover states for the event pill.
@@ -129,8 +209,24 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 v
 }
 /* Map & leaflet */
 .leaflet-container { border-radius: var(--radius-md); height:70vh !important; min-height:500px; }
-.leaflet-popup-content-wrapper { border-radius: var(--radius-md) !important; box-shadow: var(--shadow-large) !important; border:1px solid var(--border-light) !important; }
+.leaflet-popup-content-wrapper {
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-large), var(--shadow-glow) !important;
+  border:1px solid var(--border-light) !important;
+  background: var(--glass-bg-strong) !important;
+  backdrop-filter: saturate(var(--backdrop-saturation)) blur(var(--backdrop-blur));
+  -webkit-backdrop-filter: saturate(var(--backdrop-saturation)) blur(var(--backdrop-blur));
+}
+.leaflet-popup-tip {
+  background: var(--glass-bg-strong) !important;
+  border:1px solid var(--border-light) !important;
+  box-shadow: var(--shadow-subtle) !important;
+}
 .leaflet-popup-content { font-family:inherit; color: var(--text-primary); line-height:1.5 !important; }
+/* Make the close button visible in dark mode */
+.leaflet-popup-close-button {
+  color: var(--text-secondary) !important;
+}
 .google-maps-link {
   display:inline-flex;
   align-items:center;
@@ -147,13 +243,14 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 v
   box-shadow:none;
 }
 
-.google-maps-link:hover { 
-  background: var(--primary-blue); 
+.google-maps-link:hover {
+  background: var(--gradient-primary);
   color: var(--white);          /* white text on hover */
-  border-color: var(--primary-blue); 
-  transform:translateY(-1px); 
-  box-shadow: var(--shadow-subtle); 
+  border-color: transparent;
+  transform:translateY(-1px);
+  box-shadow: var(--shadow-subtle), 0 6px 16px rgba(124,58,237,0.12);
 }
+.google-maps-link:focus-visible { outline: 2px solid transparent; box-shadow: 0 0 0 2px rgba(124,58,237,0.25), 0 0 0 4px rgba(34,211,238,0.18); }
 
 .google-maps-link--small { 
   padding: var(--space-1) var(--space-2); 
@@ -164,10 +261,29 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 v
 /* Event links - distinct red accent to differentiate from Google Maps (blue) */
 .event-link { display:inline-flex; align-items:center; gap: var(--space-1-5); padding: var(--space-1-5) var(--space-3); font-size:0.8rem; font-weight:600; border-radius: var(--radius-xs); text-decoration:none; background: var(--event-bg); color: var(--event); border:1px solid var(--event-border); box-shadow:none; }
 .event-link:hover { background: var(--event); color: var(--white); border-color: var(--event); transform:translateY(-1px); box-shadow: var(--shadow-subtle); }
+.event-link:focus-visible { outline: 2px solid transparent; box-shadow: 0 0 0 2px rgba(215,38,61,0.25), 0 0 0 4px rgba(215,38,61,0.18); }
 .event-link--small { padding: var(--space-1) var(--space-2); font-size:0.72rem; border-radius: var(--radius-xxs); margin: var(--space-1) 0 var(--space-1-5); display:flex; width: fit-content; }
 
 /* Ensure event link in popup is on its own line too */
 .popup-content .event-link { display:flex; width: fit-content; margin-bottom: var(--space-1-5); }
+
+/* Sidebar resource list: make event links outlined by default */
+.resource-list-container .event-link {
+  background: transparent;
+  color: var(--event) !important;
+  border-color: var(--event);
+  box-shadow: none;
+}
+.resource-list-container .event-link:hover {
+  background: var(--event);
+  color: var(--white) !important;
+  border-color: var(--event);
+  box-shadow: var(--shadow-subtle);
+}
+.resource-list-container .event-link:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 2px rgba(215,38,61,0.28), 0 0 0 4px rgba(215,38,61,0.18);
+}
 
 /* Resource list */
 .resource-list-container { flex:1; min-width:0; border-left:1px solid var(--border-light); padding-left: var(--space-6); background: var(--surface-tertiary); }
@@ -175,18 +291,21 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 v
 .resource-item { display:block; width:100%; text-align:left; background:transparent; border:none; padding: var(--space-3) 0; border-bottom:1px solid var(--border-light); cursor:default; }
 
 .results-info {
-    position: absolute;
-    top: 18px;
-    left: 70px;
-    background: var(--overlay-bg);
-    border-radius: var(--radius-xs);
-    box-shadow: var(--shadow-hairline);
-    padding: var(--space-1) var(--space-1);
-    font-size: 0.75rem;
-    color: var(--text-tertiary);
+  position: absolute;
+  top: 18px;
+  left: 70px;
+  background: rgba(255,255,255,0.6);
+  -webkit-backdrop-filter: saturate(140%) blur(8px);
+  backdrop-filter: saturate(140%) blur(8px);
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-hairline), var(--shadow-subtle);
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
   z-index: var(--z-floating);
-    pointer-events: none;
-    text-align: left;
+  pointer-events: none;
+  text-align: left;
 }
 
 /* Generic buttons / links (optional consolidation) */
@@ -210,7 +329,7 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 v
 .loading { opacity:.7; pointer-events:none; }
 
 /* Transitions */
-* { transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease, color .2s ease; }
+* { transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease, color .2s ease, transform .2s ease, filter .2s ease; }
 
 .event-link, .event-link * {
   color: var(--event) !important;
@@ -219,4 +338,49 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 v
 .event-link:hover, .event-link:hover * {
   color: var(--white) !important;
   fill: var(--white) !important;
+}
+
+/* Hover lift for cards */
+.header-container:hover,
+.filter-container:hover,
+.map-container:hover {
+  transform: translateY(-1px);
+}
+
+/* Dark mode: true builder vibe */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface-primary: #0E1420;
+    --surface-secondary: #0B0F17;
+    --surface-tertiary: #070B12;
+    --text-primary: #EAECF0;
+    --text-secondary: #9BA4B5;
+    --text-tertiary: #7B8394;
+    --border-light: rgba(255,255,255,0.08);
+    --border-medium: rgba(255,255,255,0.14);
+    --overlay-bg: rgba(10,14,23,0.55);
+    --grid-line: rgba(255,255,255,0.04);
+    --glass-bg: rgba(13,18,28,0.55);
+    --glass-bg-strong: rgba(13,18,28,0.68);
+    --shadow-glow: 0 12px 28px rgba(124,58,237,0.22), 0 8px 20px rgba(34,211,238,0.16);
+  }
+  body {
+    background-color: var(--surface-tertiary);
+    background-image:
+      radial-gradient(60% 80% at 100% 0%, rgba(124,58,237,0.20) 0%, rgba(124,58,237,0) 60%),
+      radial-gradient(60% 80% at 0% 100%, rgba(34,211,238,0.20) 0%, rgba(34,211,238,0) 60%),
+      linear-gradient(0deg, var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  }
+  .header-container, .filter-container, .map-container {
+    background: var(--glass-bg);
+    border: 1px solid var(--border-medium);
+  }
+  .results-info {
+    background: rgba(13,18,28,0.55);
+    color: var(--text-secondary);
+  }
+  .google-maps-link { background: rgba(255,255,255,0.06); color: #A5B4FC; border-color: var(--border-medium); }
+  .google-maps-link:hover { color: var(--white); }
+  .type-badge { color: var(--white); }
 }
