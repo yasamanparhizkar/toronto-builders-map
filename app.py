@@ -5,6 +5,7 @@ import os
 from config.helpers import *
 from config.schema import EVENTS_SCHEMA
 from services.data_loader import load_places_and_events
+from flask_caching import Cache
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -19,7 +20,7 @@ MAP_CENTER = [43.65, -79.38]
 LOCATION_PRESETS = {
     "Downtown": {"center": [43.65, -79.38], "zoom": 14},
     "North York": {"center": [43.77, -79.41], "zoom": 13},
-    "Mississauga": {"center": [43.59, -79.64], "zoom": 12},
+    "Mississauga": {"center": [43.57, -79.64], "zoom": 12},
     "Waterloo": {"center": [43.47, -80.54], "zoom": 12},
     "Scarborough": {"center": [43.77, -79.25], "zoom": 12}
 }
@@ -38,6 +39,8 @@ if not (AIRTABLE_API_KEY and AIRTABLE_BASE_ID and AIRTABLE_PLACES_TABLE_ID and A
 app = dash.Dash(__name__, external_stylesheets=[
     'https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&display=swap'
 ])
+
+cache = Cache(app.server, config={"CACHE_TYPE": "SimpleCache", "CACHE_DEFAULT_TIMEOUT": 300})
 
 app.title = "Toronto Builders Guide"
 app.layout = html.Div([
@@ -299,6 +302,16 @@ def update_event_window_pill_styles(selected_window, pill_ids):
             classes.append(base)
     return classes
 
+@cache.memoize()
+def cached_places_and_events(interval_days):
+    return load_places_and_events(
+        AIRTABLE_API_KEY,
+        AIRTABLE_BASE_ID,
+        AIRTABLE_PLACES_TABLE_ID,
+        AIRTABLE_EVENTS_TABLE_ID,
+        interval_days=interval_days
+    )
+
 @app.callback(
     Output('resources-store', 'data'),
     [Input('event-window-store', 'data'),
@@ -306,13 +319,7 @@ def update_event_window_pill_styles(selected_window, pill_ids):
 )
 def update_resources_on_time_window_change(selected_window, n_intervals):
     # Reload places and events with the new interval
-    places_by_id, place_id_to_events = load_places_and_events(
-        AIRTABLE_API_KEY,
-        AIRTABLE_BASE_ID,
-        AIRTABLE_PLACES_TABLE_ID,
-        AIRTABLE_EVENTS_TABLE_ID,
-        interval_days=selected_window
-    )
+    places_by_id, place_id_to_events = cached_places_and_events(selected_window)
     # Prepare data for the store
     return [
         {**extract_place_info(p), 'events': place_id_to_events.get(p.get('id'), [])}
