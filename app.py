@@ -91,6 +91,7 @@ app.layout = html.Div([
     dcc.Store(id='resources-store'),
     dcc.Store(id='selected-types-store', data=[]),
     dcc.Store(id='event-window-store', data=EVENT_TIME_WINDOW_DAYS),
+    dcc.Store(id='map-bounds-store'), 
     dcc.Interval(id='startup-refresh', interval=100, n_intervals=0, max_intervals=1),  
     
     
@@ -241,6 +242,41 @@ def init_selected_types(resources_data, current_selected):
         return no_update
     return compute_unique_types(resources_data)
 
+# add this once (you already have Output/Input imported)
+# Debounced clientside callback: writes stable bounds to map-bounds-store
+app.clientside_callback(
+    """
+    function(bounds) {
+        if (!bounds) {
+            return window.dash_clientside.no_update;
+        }
+        // create per-window debounce state
+        window._debouncedMapBounds = window._debouncedMapBounds || {counter:0, timer:null};
+        window._debouncedMapBounds.counter += 1;
+        const callId = window._debouncedMapBounds.counter;
+        // clear previous timer and schedule a new one
+        if (window._debouncedMapBounds.timer) {
+            clearTimeout(window._debouncedMapBounds.timer);
+        }
+        // debounce delay in ms (tweak between 200-500)
+        const delay = 300;
+        return new Promise((resolve) => {
+            window._debouncedMapBounds.timer = setTimeout(function() {
+                // only resolve if this is the latest scheduled call
+                if (callId === window._debouncedMapBounds.counter) {
+                    resolve(bounds);
+                } else {
+                    resolve(window.dash_clientside.no_update);
+                }
+            }, delay);
+        });
+    }
+    """,
+    Output('map-bounds-store', 'data'),
+    Input('main-map', 'bounds')
+)
+
+
 # Update event-window-store when the event-window pills are clicked
 @app.callback(
     Output('event-window-store', 'data'),
@@ -325,7 +361,6 @@ def update_resources_on_time_window_change(selected_window, n_intervals):
         {**extract_place_info(p), 'events': place_id_to_events.get(p.get('id'), [])}
         for p in places_by_id.values()
     ]
-# Add this with your other callbacks
 
 @app.callback(
     Output('main-map', 'center'),
@@ -350,7 +385,8 @@ def jump_to_preset_location(n_clicks):
     [Output('marker-layer', 'children'),
      Output('results-info', 'children'),
      Output('resource-list', 'children')],
-    [Input('selected-types-store', 'data'), Input('main-map', 'bounds')],
+    [Input('selected-types-store', 'data'),
+     Input('map-bounds-store', 'data')],
     [State('resources-store', 'data')]
 )
 def update_markers_info_and_list(selected_types, bounds, places_data):
