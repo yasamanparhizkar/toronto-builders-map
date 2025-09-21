@@ -13,7 +13,7 @@ def load_places_and_events(
     api_key, base_id, places_table_id, events_table_id,
     # date filters
     start_date=datetime.today(),
-    interval_days=14):
+    interval_days=14, cache_date=None):
     """
     Loads places and their associated events from Airtable tables.
 

@@ -90,6 +90,7 @@ app.layout = html.Div([
     dcc.Store(id='selected-types-store', data=[]),
     dcc.Store(id='event-window-store', data=EVENT_TIME_WINDOW_DAYS),
     dcc.Store(id='map-bounds-store'), 
+    dcc.Store(id='all-types-store', data=[]),
     dcc.Interval(id='startup-refresh', interval=0, n_intervals=0, max_intervals=1),  
     
     
@@ -150,11 +151,10 @@ Performance refactor: separate concerns so clicking pills doesn't re-render chil
 # 1) Build filter pills (types + EVENTS_PILL + event-window group)
 @app.callback(
     Output('pill-container', 'children'),
-    Input('places-store', 'data')
+    Input('all-types-store', 'data')
 )
-def build_filter_pills(places_data):
-    places_types = get_places_types(places_data)
-    pill_filters = places_types + [EVENTS_PILL]
+def build_filter_pills(all_types):
+    pill_filters = all_types + [EVENTS_PILL]
 
     pills = [
         html.Button(
@@ -242,6 +242,18 @@ def update_selected_types(n_clicks_list, resources_data, current_selected):
     # Fallback: ensure only valid types
     return [t for t in current_selected if t in pill_filters]
 
+# On app startup, populate the all-types-store with ALL place types
+@app.callback(
+    Output('all-types-store', 'data'),
+    Input('startup-refresh', 'n_intervals'),
+    prevent_initial_call=True
+)
+def init_all_types(n_intervals):
+    # Load ALL data without time window filtering to get the complete set of types
+    places_by_id, _ = cached_places_and_events(999)  # Use a large window to get all types
+    return get_places_types([extract_place_info(p) for p in places_by_id.values()])
+
+
 # Initialize selection when places arrive and no selection set yet
 @app.callback(
     Output('selected-types-store', 'data', allow_duplicate=True),
@@ -292,20 +304,28 @@ app.clientside_callback(
 @app.callback(
     Output('event-window-store', 'data'),
     [Input({'type': 'event-window-pill', 'index': ALL}, 'n_clicks')],
-    [State({'type': 'event-window-pill', 'index': ALL}, 'id'), # we don't need this probably
+    [State({'type': 'event-window-pill', 'index': ALL}, 'id'),
      State('event-window-store', 'data')]
 )
 def refresh_event_time_window(n_clicks_list, pill_ids, current_window):
-    print('n_clicks_list', n_clicks_list)
-    print('pills_id', pill_ids)
-    print('current_window', current_window)
     if not n_clicks_list or not pill_ids:
         return current_window
     
-    selected_tw = [item for item, keep in zip(EVENT_TIME_WINDOWS, n_clicks_list) if keep][0]
-    print(selected_tw)
-    print(selected_tw['value'])
-    return selected_tw['value']
+    # Use callback context to determine which pill was clicked
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return current_window
+        
+    # Get the index of the clicked pill
+    trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    try:
+        import json
+        clicked_pill_idx = json.loads(trigger_id)['index']
+        # Return the clicked pill's value directly
+        return clicked_pill_idx
+    except:
+        # If parsing fails, return current value
+        return current_window
 
 # Update pill styles using pattern-matching output
 @app.callback(
@@ -354,12 +374,17 @@ def update_event_window_pill_styles(selected_window, pill_ids):
 
 @cache.memoize()
 def cached_places_and_events(interval_days):
+    # Include today's date in the cache key to ensure freshness
+    import datetime
+    today = datetime.datetime.now().strftime('%Y-%m-%d')
+    
     return load_places_and_events(
         AIRTABLE_API_KEY,
         AIRTABLE_BASE_ID,
         AIRTABLE_PLACES_TABLE_ID,
         AIRTABLE_EVENTS_TABLE_ID,
-        interval_days=interval_days
+        interval_days=interval_days,
+        cache_date=today  # Pass as an unused parameter to create a unique cache key
     )
 
 @app.callback(
@@ -400,8 +425,8 @@ def jump_to_preset_location(n_clicks):
      Output('results-info', 'children'),
      Output('resource-list', 'children')],
     [Input('selected-types-store', 'data'),
-     Input('map-bounds-store', 'data')],
-    [State('places-store', 'data')]
+     Input('map-bounds-store', 'data'),
+     Input('places-store', 'data')]
 )
 def update_markers_info_and_list(selected_types, bounds, places_data):
     # center coordinates for sorting places
