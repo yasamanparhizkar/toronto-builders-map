@@ -292,17 +292,20 @@ app.clientside_callback(
 @app.callback(
     Output('event-window-store', 'data'),
     [Input({'type': 'event-window-pill', 'index': ALL}, 'n_clicks')],
-    [State({'type': 'event-window-pill', 'index': ALL}, 'id'),
+    [State({'type': 'event-window-pill', 'index': ALL}, 'id'), # we don't need this probably
      State('event-window-store', 'data')]
 )
 def refresh_event_time_window(n_clicks_list, pill_ids, current_window):
+    print('n_clicks_list', n_clicks_list)
+    print('pills_id', pill_ids)
+    print('current_window', current_window)
     if not n_clicks_list or not pill_ids:
         return current_window
-    # Find which pill was clicked most recently
-    for n, pid in zip(n_clicks_list, pill_ids):
-        if n and pid:
-            return pid['index']
-    return current_window
+    
+    selected_tw = [item for item, keep in zip(EVENT_TIME_WINDOWS, n_clicks_list) if keep][0]
+    print(selected_tw)
+    print(selected_tw['value'])
+    return selected_tw['value']
 
 # Update pill styles using pattern-matching output
 @app.callback(
