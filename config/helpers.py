@@ -138,7 +138,7 @@ def is_within_bounds(lat, lon, bounds):
     return in_lat and in_lon
 
 # Helper to compute unique types from resources data
-def compute_unique_types(resources_data):
+def get_places_types(resources_data):
     """Computes a sorted list of unique types from a list of resources.
 
     Args:
