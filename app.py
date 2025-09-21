@@ -194,18 +194,13 @@ def update_selected_types(n_clicks_list, resources_data, current_selected):
     selected_excluding_events = [t for t in current_selected if t != EVENTS_PILL]
     selected_event_pill = [t for t in current_selected if t == EVENTS_PILL]
     
-    print(current_selected)
-    print(selected_excluding_events)
     # We must differentiate based on what pills are currently selected
     # 1. if no 'types' pills are selected, turn THOSE pills on (types)
     # but we honour he previous state of events_pills
     #if not any(t in (current_selected or []) for t in types):
     if not selected_excluding_events:
-        print('adding back types')
         current_selected += types
         
-    print(current_selected)
-
     ctx = dash.callback_context
     # If nothing was clicked yet (all are None/0), keep/show full set
     # why am I asking this if this callback is triggeed UPON CLICKS?
@@ -213,7 +208,6 @@ def update_selected_types(n_clicks_list, resources_data, current_selected):
         return types
 
     trigger = ctx.triggered[0]['prop_id']
-    print('trigger', trigger)
     try:
         trigger_id = json.loads(trigger.split('.')[0])
         # trigger_id example {"index":"Only Places with Events","type":"filter-pill"}
@@ -248,7 +242,7 @@ def update_selected_types(n_clicks_list, resources_data, current_selected):
     # Fallback: ensure only valid types
     return [t for t in current_selected if t in pill_filters]
 
-# Initialize selection when resources arrive and no selection set yet
+# Initialize selection when places arrive and no selection set yet
 @app.callback(
     Output('selected-types-store', 'data', allow_duplicate=True),
     Input('places-store', 'data'),
@@ -293,7 +287,6 @@ app.clientside_callback(
     Output('map-bounds-store', 'data'),
     Input('main-map', 'bounds')
 )
-
 
 # Update event-window-store when the event-window pills are clicked
 @app.callback(
