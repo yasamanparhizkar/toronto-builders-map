@@ -112,7 +112,13 @@ app.layout = html.Div([
     ], className="main-content"),
     # Footer (intentionally left empty for now)
     html.Div([
-        
+            html.Script(
+        {
+            "data-goatcounter": "https://tobuilders-guide.goatcounter.com/count",
+            "src": "//gc.zgo.at/count.js",
+            "async": True
+        }
+    )
     ])
 ], className="_dash-container")
 
