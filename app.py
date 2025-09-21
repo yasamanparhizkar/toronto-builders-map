@@ -36,7 +36,7 @@ app.layout = html.Div([
     html.Div([
         # Left: title + subtitle grouped
         html.Div([
-            html.H1("Toronto Builders Map"),
+            html.H1("Toronto Builders Guide"),
             html.P(
                 "Where to Work, Meet & Build. Your guide to Toronto's tech ecosystem",
                 className="subtitle"
