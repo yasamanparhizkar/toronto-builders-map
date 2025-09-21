@@ -31,14 +31,14 @@ app = dash.Dash(__name__, external_stylesheets=[
     'https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&display=swap'
 ])
 
-app.title = "Toronto Builders Map"
+app.title = "Toronto Builders Guide"
 app.layout = html.Div([
     html.Div([
         # Left: title + subtitle grouped
         html.Div([
             html.H1("Toronto Builders Map"),
             html.P(
-                "Your guide to build and connect in Toronto's tech ecosystem",
+                "Where to Work, Meet & Build. Your guide to Toronto's tech ecosystem",
                 className="subtitle"
             )
         ], className="header-meta"),
