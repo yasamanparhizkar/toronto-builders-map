@@ -15,6 +15,7 @@ AIRTABLE_BASE_ID = os.getenv('AIRTABLE_BASE_ID')
 AIRTABLE_PLACES_TABLE_ID = os.getenv('AIRTABLE_PLACES_TABLE_ID')
 AIRTABLE_EVENTS_TABLE_ID = os.getenv('AIRTABLE_EVENTS_TABLE_ID')
 
+MAP_CENTER = [43.65, -79.38]
 EVENTS_PILL = "Only Places with Events"
 EVENT_TIME_WINDOW_DAYS = 14
 EVENT_TIME_WINDOWS = [
@@ -89,7 +90,7 @@ app.layout = html.Div([
             html.P(id="results-info", className="results-info"),
             dl.Map(
                 id="main-map", 
-                center=[43.65, -79.38], 
+                center=MAP_CENTER, 
                 zoom=12, 
                 style={'height': '70vh', 'width': '100%'}, 
                 children=[
@@ -305,12 +306,15 @@ def update_resources_on_time_window_change(selected_window, n_intervals):
     [Input('selected-types-store', 'data'), Input('main-map', 'bounds')],
     [State('resources-store', 'data')]
 )
-def update_markers_info_and_list(selected_types, bounds, resources_data):
+def update_markers_info_and_list(selected_types, bounds, places_data):
+    # center coordinates for sorting places
+    center_lat, center_lon = get_center_from_map_bounds(bounds, MAP_CENTER)
+    
     # selected_types here receives the places types AND the 'Only Places with Events' filter
-    resources_data = resources_data or []
+    places_data = places_data or []
     # Build list of resources that match selected types and have valid coordinates
-    filtered_resources = []
-    for info in resources_data:
+    fiiltered_places = []
+    for info in places_data:
         if info['lat'] is None or info['lon'] is None:
             continue
         
@@ -323,7 +327,7 @@ def update_markers_info_and_list(selected_types, bounds, resources_data):
         if EVENTS_PILL in selected_types and not info.get('events'):
             continue
         
-        filtered_resources.append(info)
+        fiiltered_places.append(info)
 
     # Markers: show all filtered markers (not limited by view bounds)
     markers = [
@@ -333,20 +337,24 @@ def update_markers_info_and_list(selected_types, bounds, resources_data):
                 build_popup_content(
                     info['name'], info['types'], info['notes'], info['url'], info.get('events')
                 ),
-                maxWidth=350
+                maxWidth=350,
+                autoPanPadding=[70, 70]
             )
         )
-        for info in filtered_resources
+        for info in fiiltered_places
     ]
 
     # Sidebar list: only items within current view bounds
-    visible_resources = [
-        info for info in filtered_resources
+    visible_places = [
+        info for info in fiiltered_places
         if is_within_bounds(info['lat'], info['lon'], bounds)
     ]
+    
+    # sort by distance too the center
+    visible_places.sort(key=lambda place: rough_distance(center_lat, center_lon, place['lat'], place['lon']))
 
-    resource_list_items = []
-    for info in visible_resources:
+    places_list_items = []
+    for info in visible_places:
         type_badges = build_type_badges(info['types'])
         # Event link(s): show the first event link if present
         event_links = info.get('events') or []
@@ -355,7 +363,7 @@ def update_markers_info_and_list(selected_types, bounds, resources_data):
             if e and e.get('url'):
                 first_event_link = e
                 break
-        resource_list_items.append(
+        places_list_items.append(
             html.Div([
                 html.H4(info['name'], className="resource-item-title"),
                 html.Div(type_badges, className="type-badges") if type_badges else None,
@@ -371,11 +379,11 @@ def update_markers_info_and_list(selected_types, bounds, resources_data):
         )
 
     # Info text
-    filtered_count = len(filtered_resources)
-    visible_count = len(visible_resources)
+    filtered_count = len(fiiltered_places)
+    visible_count = len(visible_places)
     info_text = f"Showing {visible_count}/{filtered_count} locations on the map"
 
-    return markers, info_text, resource_list_items
+    return markers, info_text, places_list_items
 
 if __name__ == '__main__':
     import os

@@ -154,3 +154,24 @@ def compute_unique_types(resources_data):
             if t:
                 type_set.add(t)
     return sorted(type_set)
+
+# Compute center of the map from bounds
+def get_center_from_map_bounds(bounds, default):
+    if not bounds:
+        return default
+    try:
+        (south, west), (north, east) = bounds
+        center_lat = (south + north) / 2
+        center_lon = (west + east) / 2
+        return (center_lat, center_lon)
+    except Exception:
+        return default
+    
+def rough_distance(lat1, lon1, lat2, lon2):
+    """
+    Just for sorting
+    """
+    from math import cos, radians
+    lat_diff = lat2 - lat1
+    lon_diff = (lon2 - lon1) * cos(radians(lat1))
+    return lat_diff**2 + lon_diff**2  # no sqrt, still valid for sorting
