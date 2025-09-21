@@ -16,6 +16,13 @@ AIRTABLE_PLACES_TABLE_ID = os.getenv('AIRTABLE_PLACES_TABLE_ID')
 AIRTABLE_EVENTS_TABLE_ID = os.getenv('AIRTABLE_EVENTS_TABLE_ID')
 
 MAP_CENTER = [43.65, -79.38]
+LOCATION_PRESETS = {
+    "Downtown": {"center": [43.65, -79.38], "zoom": 14},
+    "North York": {"center": [43.77, -79.41], "zoom": 13},
+    "Mississauga": {"center": [43.59, -79.64], "zoom": 12},
+    "Waterloo": {"center": [43.47, -80.54], "zoom": 12},
+    "Scarborough": {"center": [43.77, -79.25], "zoom": 12}
+}
 EVENTS_PILL = "Only Places with Events"
 EVENT_TIME_WINDOW_DAYS = 14
 EVENT_TIME_WINDOWS = [
@@ -88,6 +95,13 @@ app.layout = html.Div([
     html.Div([
         html.Div([
             html.P(id="results-info", className="results-info"),
+            html.Div([
+                html.Button(
+                    location_name,
+                    id={'type': 'location-preset', 'index': location_name},
+                    className="location-preset-btn"
+                ) for location_name in LOCATION_PRESETS.keys()
+            ], className="location-presets-container"),
             dl.Map(
                 id="main-map", 
                 center=MAP_CENTER, 
@@ -304,6 +318,26 @@ def update_resources_on_time_window_change(selected_window, n_intervals):
         {**extract_place_info(p), 'events': place_id_to_events.get(p.get('id'), [])}
         for p in places_by_id.values()
     ]
+# Add this with your other callbacks
+
+@app.callback(
+    Output('main-map', 'center'),
+    Input({'type': 'location-preset', 'index': ALL}, 'n_clicks'),
+    prevent_initial_call=True
+)
+def jump_to_preset_location(n_clicks):
+    ctx = dash.callback_context
+    if not ctx.triggered_id:
+        return no_update
+
+    # Get the index (e.g., "Downtown") from the ID of the button that was clicked
+    location_name = ctx.triggered_id.get('index')
+    
+    preset = LOCATION_PRESETS.get(location_name)
+    if preset:
+        return preset['center']
+    
+    return no_update
 
 @app.callback(
     [Output('marker-layer', 'children'),

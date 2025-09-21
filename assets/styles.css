@@ -2,14 +2,6 @@
 :root {
     --primary-blue: #007AFF;
     --primary-blue-hover: #0056D6;
-    --surface-primary: #FFFFFF;
-    --surface-secondary: #F2F2F7;
-    --surface-tertiary: #F8F9FA;
-    --text-primary: #1D1D1F;
-    --text-secondary: #86868B;
-    --text-tertiary: #8E8E93;
-    --border-light: #E5E5EA;
-    --border-medium: #D1D1D6;
     --shadow-subtle: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
     --shadow-medium: 0 4px 6px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.06);
     --shadow-large: 0 10px 15px rgba(0,0,0,0.04), 0 4px 6px rgba(0,0,0,0.05);
@@ -24,12 +16,8 @@
   --accent-indigo: #4F46E5;  /* indigo */
   --gradient-primary: linear-gradient(135deg, var(--accent-violet) 0%, var(--accent-cyan) 100%);
   --gradient-primary-hover: linear-gradient(135deg, #8B5CF6 0%, #06B6D4 100%);
-  --grid-line: rgba(13, 13, 13, 0.05);
-  --glass-bg: rgba(255,255,255,0.66);
-  --glass-bg-strong: rgba(255,255,255,0.75);
   --backdrop-blur: 12px;
   --backdrop-saturation: 140%;
-  --shadow-glow: 0 12px 28px rgba(124,58,237,0.14), 0 8px 20px rgba(34,211,238,0.10);
 
   /* Event accent system */
   --event: #D7263D;            /* primary red accent for events */
@@ -48,20 +36,34 @@
     --space-6: 24px;   /* 3xl */
 
     /* Overlay tokens */
-    --overlay-bg: rgba(255,255,255,0.55);
     --shadow-hairline: 0 1px 1px rgba(0,0,0,0.08);
 
   /* Common tokens */
   --white: #FFFFFF;            /* alias for white when used as text on dark */
   --z-floating: 1000;          /* floating UI like counters/badges */
+
+  /* Dark Mode Variables (now default) */
+    --surface-primary: #0E1420;
+    --surface-secondary: #0B0F17;
+    --surface-tertiary: #070B12;
+    --text-primary: #EAECF0;
+    --text-secondary: #9BA4B5;
+    --text-tertiary: #7B8394;
+    --border-light: rgba(255,255,255,0.08);
+    --border-medium: rgba(255,255,255,0.14);
+    --overlay-bg: rgba(10,14,23,0.55);
+    --grid-line: rgba(255,255,255,0.04);
+    --glass-bg: rgba(13,18,28,0.55);
+    --glass-bg-strong: rgba(13,18,28,0.68);
+    --shadow-glow: 0 12px 28px rgba(124,58,237,0.22), 0 8px 20px rgba(34,211,238,0.16);
 }
 
 /* Subtle grid + radial glow background for a "builder" vibe */
 body {
   background-color: var(--surface-tertiary);
   background-image:
-    radial-gradient(60% 80% at 100% 0%, rgba(124,58,237,0.12) 0%, rgba(124,58,237,0) 60%),
-    radial-gradient(60% 80% at 0% 100%, rgba(34,211,238,0.12) 0%, rgba(34,211,238,0) 60%),
+    radial-gradient(60% 80% at 100% 0%, rgba(124,58,237,0.20) 0%, rgba(124,58,237,0) 60%),
+    radial-gradient(60% 80% at 0% 100%, rgba(34,211,238,0.20) 0%, rgba(34,211,238,0) 60%),
     /* grid */
     linear-gradient(0deg, var(--grid-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
@@ -238,8 +240,8 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 v
   font-weight:500;
   border-radius: var(--radius-xs);
   text-decoration:none;
-  background: var(--surface-secondary);   /* #f2f2f7 */
-  color: var(--primary-blue);             /* blue text */
+  background: rgba(255,255,255,0.06);
+  color: #A5B4FC;
   border: 1px solid var(--border-medium);
   transition:.2s;
   box-shadow:none;
@@ -294,9 +296,9 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 v
 
 .results-info {
   position: absolute;
-  top: 18px;
+  top: 50px;
   left: 70px;
-  background: rgba(255,255,255,0.6);
+  background: rgba(13,18,28,0.55);
   -webkit-backdrop-filter: saturate(140%) blur(8px);
   backdrop-filter: saturate(140%) blur(8px);
   border-radius: var(--radius-xs);
@@ -304,14 +306,65 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 v
   box-shadow: var(--shadow-hairline), var(--shadow-subtle);
   padding: var(--space-1) var(--space-2);
   font-size: 0.75rem;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   z-index: var(--z-floating);
   pointer-events: none;
   text-align: left;
 }
 
 /* Generic buttons / links (optional consolidation) */
-.button, .filter-pill, .google-maps-link { -webkit-tap-highlight-color: transparent; }
+.button, .filter-pill, .google-maps-link, .event-link, .location-preset-btn { transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease, color .2s ease, transform .2s ease, filter .2s ease; }
+
+.event-link, .event-link * {
+  color: var(--event) !important;
+  fill: var(--event) !important; /* for SVG icons if any */
+}
+.event-link:hover, .event-link:hover * {
+  color: var(--white) !important;
+  fill: var(--white) !important;
+}
+
+.location-presets-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
+
+.location-preset-btn {
+    background: var(--surface-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-xs);
+    padding: var(--space-1-5) var(--space-3);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    font-family: inherit;
+    transition: .2s;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.location-preset-btn:hover {
+    background: var(--surface-primary);
+    color: var(--text-primary);
+    border-color: var(--primary-blue);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-subtle);
+}
+
+.location-preset-btn:focus-visible {
+    outline: 2px solid transparent;
+    box-shadow: 0 0 0 2px rgba(124,58,237,0.25), 0 0 0 4px rgba(34,211,238,0.18);
+}
+
+.location-preset-btn:active {
+    background: var(--gradient-primary);
+    color: var(--white);
+    border-color: transparent;
+    box-shadow: var(--shadow-subtle), 0 6px 16px rgba(124,58,237,0.12);
+}
 
 /* Responsive */
 @media (max-width:768px) {
@@ -331,7 +384,7 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 v
 .loading { opacity:.7; pointer-events:none; }
 
 /* Transitions */
-* { transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease, color .2s ease, transform .2s ease, filter .2s ease; }
+.button, .filter-pill, .google-maps-link, .event-link, .location-preset-btn { transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease, color .2s ease, transform .2s ease, filter .2s ease; }
 
 .event-link, .event-link * {
   color: var(--event) !important;
@@ -342,47 +395,44 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 v
   fill: var(--white) !important;
 }
 
-/* Hover lift for cards */
-.header-container:hover,
-.filter-container:hover,
-.map-container:hover {
-  transform: translateY(-1px);
+.location-presets-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
 }
 
-/* Dark mode: true builder vibe */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --surface-primary: #0E1420;
-    --surface-secondary: #0B0F17;
-    --surface-tertiary: #070B12;
-    --text-primary: #EAECF0;
-    --text-secondary: #9BA4B5;
-    --text-tertiary: #7B8394;
-    --border-light: rgba(255,255,255,0.08);
-    --border-medium: rgba(255,255,255,0.14);
-    --overlay-bg: rgba(10,14,23,0.55);
-    --grid-line: rgba(255,255,255,0.04);
-    --glass-bg: rgba(13,18,28,0.55);
-    --glass-bg-strong: rgba(13,18,28,0.68);
-    --shadow-glow: 0 12px 28px rgba(124,58,237,0.22), 0 8px 20px rgba(34,211,238,0.16);
-  }
-  body {
-    background-color: var(--surface-tertiary);
-    background-image:
-      radial-gradient(60% 80% at 100% 0%, rgba(124,58,237,0.20) 0%, rgba(124,58,237,0) 60%),
-      radial-gradient(60% 80% at 0% 100%, rgba(34,211,238,0.20) 0%, rgba(34,211,238,0) 60%),
-      linear-gradient(0deg, var(--grid-line) 1px, transparent 1px),
-      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-  }
-  .header-container, .filter-container, .map-container {
-    background: var(--glass-bg);
-    border: 1px solid var(--border-medium);
-  }
-  .results-info {
-    background: rgba(13,18,28,0.55);
+.location-preset-btn {
+    background: var(--surface-secondary);
     color: var(--text-secondary);
-  }
-  .google-maps-link { background: rgba(255,255,255,0.06); color: #A5B4FC; border-color: var(--border-medium); }
-  .google-maps-link:hover { color: var(--white); }
-  .type-badge { color: var(--white); }
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-xs);
+    padding: var(--space-1-5) var(--space-3);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    font-family: inherit;
+    transition: .2s;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.location-preset-btn:hover {
+    background: var(--surface-primary);
+    color: var(--text-primary);
+    border-color: var(--primary-blue);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-subtle);
+}
+
+.location-preset-btn:focus-visible {
+    outline: 2px solid transparent;
+    box-shadow: 0 0 0 2px rgba(124,58,237,0.25), 0 0 0 4px rgba(34,211,238,0.18);
+}
+
+.location-preset-btn:active {
+    background: var(--gradient-primary);
+    color: var(--white);
+    border-color: transparent;
+    box-shadow: var(--shadow-subtle), 0 6px 16px rgba(124,58,237,0.12);
 }
