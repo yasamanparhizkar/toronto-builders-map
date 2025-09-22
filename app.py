@@ -67,13 +67,6 @@ app.layout = html.Div([
                 target="_blank",
                 className="header-cta filter-pill active header-cta--event",
             ),
-            html.Iframe(
-                src="https://ghbtns.com/github-btn.html?user=yasamanparhizkar&repo=toronto-builders-map&type=star&count=true&size=large",
-                style={"border": "none", "overflow": "hidden", "width": "170px", "height": "30px"},
-                width="170",
-                height="30",
-                title="GitHub"
-            ),
         ], className="header-cta-container")
     ], className="header-container"),
     
@@ -127,17 +120,25 @@ app.layout = html.Div([
             html.Div(id="resource-list", className="resource-list-scroll")
         ], className="resource-list-container")
     ], className="main-content"),
-    # Footer (intentionally left empty for now)
-    html.Div([
-            html.Script(
+# Footer with GitHub link
+html.Div([
+    html.A(
+        children=[
+            "⭐ Star on GitHub"  # Simple text with star emoji
+        ],
+        href="https://github.com/yasamanparhizkar/toronto-builders-map",
+        target="_blank",
+        className="github-button"
+    ),
+    # Keep the analytics script
+    html.Script(
         {
             "data-goatcounter": "https://tobuilders-guide.goatcounter.com/count",
             "src": "//gc.zgo.at/count.js",
             "async": True
         }
     )
-    ])
-], className="_dash-container")
+], className="footer-container")], className="_dash-container")
 
 """
 Performance refactor: separate concerns so clicking pills doesn't re-render children.

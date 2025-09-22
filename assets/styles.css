@@ -368,14 +368,22 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 v
 /* Responsive */
 @media (max-width:768px) {
   ._dash-container { padding: var(--space-4); }
-  .header-container { padding: var(--space-6) var(--space-5); flex-direction:column; align-items:flex-start; gap: var(--space-2); }
-  .header-cta { margin-top: var(--space-1); }
+  .header-container { padding: var(--space-6) var(--space-5); flex-direction:column; align-items:flex-start; gap: var(--space-2); flex-wrap: wrap;}
+  .header-cta { margin-top: var(--space-1); 
+    display: inline-flex;
+    flex: 0 0 auto;
+  }
   h1 { font-size:2rem; }
   .filter-content { flex-direction:column; align-items:stretch; gap: var(--space-3); }
   .filter-pill { font-size:0.75rem; padding: var(--space-1) var(--space-2); }
   .leaflet-container { height:60vh !important; min-height:400px; }
   .main-content { flex-direction:column; }
   .resource-list-container { border-left:none; padding-left:0; }
+  .results-info {
+    top: 100px; /* Push down to clear the two rows of location presets */
+  }
+  
+
 }
 
 /* Loading */
@@ -433,4 +441,52 @@ h1 { color: var(--text-primary); font-weight:700; font-size:2.5rem; margin:0 0 v
     color: var(--white);
     border-color: transparent;
     box-shadow: var(--shadow-subtle), 0 6px 16px rgba(124,58,237,0.12);
+}
+
+/* Footer styling */
+.footer-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: var(--space-6);
+  padding: var(--space-4) var(--space-2);
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* GitHub button styling that matches the design system */
+.github-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--glass-bg-strong);
+  color: var(--text-primary);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-subtle);
+}
+
+.github-button:hover {
+  background: var(--gradient-primary);
+  color: var(--white);
+  border-color: transparent;
+  box-shadow: var(--shadow-medium), var(--shadow-glow);
+}
+
+.github-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+@media (max-width: 768px) {
+  .footer-container {
+    margin-top: var(--space-4);
+    flex-direction: column;
+    padding-bottom: var(--space-6);
+  }
 }
