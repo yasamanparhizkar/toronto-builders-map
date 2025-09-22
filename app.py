@@ -36,9 +36,19 @@ if not (AIRTABLE_API_KEY and AIRTABLE_BASE_ID and AIRTABLE_PLACES_TABLE_ID and A
     raise RuntimeError("Missing Airtable environment variables (API key, base id, places table id, or events table id).")
 
 
-app = dash.Dash(__name__, external_stylesheets=[
-    'https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&display=swap'
-])
+app = dash.Dash(
+    __name__,
+    external_stylesheets=[
+        'https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&display=swap'
+    ],
+    external_scripts=[
+        {
+            "src": "https://gc.zgo.at/count.js",
+            "async": True,
+            "data-goatcounter": "https://tobuilders-guide.goatcounter.com/count"
+        }
+    ]
+)
 
 cache = Cache(app.server, config={"CACHE_TYPE": "SimpleCache", "CACHE_DEFAULT_TIMEOUT": 300})
 
@@ -130,11 +140,10 @@ html.Div([
         target="_blank",
         className="github-button"
     ),
-    # Keep the analytics script
     html.Script(
         {
             "data-goatcounter": "https://tobuilders-guide.goatcounter.com/count",
-            "src": "//gc.zgo.at/count.js",
+            "src": "https://gc.zgo.at/count.js",
             "async": True
         }
     )
